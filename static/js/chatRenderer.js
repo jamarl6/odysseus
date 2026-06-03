@@ -1329,6 +1329,10 @@ export function createMsgFooter(msgElement) {
       e.stopPropagation();
       if (window.chatModule?.rewriteWith) window.chatModule.rewriteWith(msgElement, 'Explain your last response in simpler terms. Use plain language and short sentences.');
     }},
+    { id: 'subchat', icon: '💬', title: 'Ask follow-up (Sub-chat)', cls: 'msg-action-btn', handler(e) {
+      e.stopPropagation();
+      if (window.chatModule?.startSubChat) window.chatModule.startSubChat(msgElement);
+    }},
     { id: 'fork', icon: '\u2ADD', title: 'Fork conversation', cls: 'msg-action-btn', handler(e) {
       e.stopPropagation();
       if (window.chatModule?.forkFrom) window.chatModule.forkFrom(msgElement);
@@ -1344,7 +1348,7 @@ export function createMsgFooter(msgElement) {
 
   // Determine which 3 to show: use recent order, fallback to defaults
   const recent = _getRecentActions();
-  const defaults = ['copy', 'delete', 'fork'];
+  const defaults = ['subchat', 'copy', 'delete'];
   const order = recent.length > 0 ? recent : defaults;
   const sorted = [...availableActions].sort((a, b) => {
     const ai = order.indexOf(a.id), bi = order.indexOf(b.id);

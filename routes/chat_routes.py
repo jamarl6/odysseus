@@ -394,6 +394,9 @@ def setup_chat_routes(
         search_context = form_data.get("search_context")  # pre-fetched web search results (compare mode)
         compare_mode = str(form_data.get("compare_mode", "")).lower() == "true"
         incognito = str(form_data.get("incognito", "")).lower() == "true"
+        is_subchat = str(form_data.get("is_subchat", "")).lower() == "true"
+        subchat_context_text = form_data.get("subchat_context_text")
+        subchat_history = form_data.get("subchat_history")
         chat_mode = str(form_data.get("mode", "")).lower()  # 'chat' or 'agent'
         # Workspace: confine the agent's file/shell tools to this folder. Validate
         # it's a real directory; ignore (no confinement) otherwise.
@@ -458,6 +461,24 @@ def setup_chat_routes(
             raise HTTPException(404, str(e))
         except (ValueError, ValidationError):
             raise HTTPException(400, "Invalid request parameters")
+
+        if is_subchat:
+            import copy
+            import uuid
+            sess = copy.deepcopy(sess)
+            sess.id = "subchat_" + str(uuid.uuid4())
+            sess.history = []
+            incognito = True
+            
+            if subchat_context_text:
+                sess.add_message(ChatMessage("system", f"Context for the user's follow-up question:\n{subchat_context_text}"))
+                
+            if subchat_history:
+                try:
+                    for turn in json.loads(subchat_history):
+                        sess.add_message(ChatMessage(turn.get("role", "user"), turn.get("content", "")))
+                except Exception as e:
+                    logger.error(f"Failed to parse subchat_history: {e}")
 
         # ------------------------------------------------------------------ #
         # Privilege gates that must fire BEFORE any LLM work / token spend.

@@ -4751,6 +4751,156 @@ import createResearchSynapse from './researchSynapse.js';
   }
 
   // Public API
+  export async function startSubChat(aiMsgElement) {
+    const aiText = aiMsgElement.dataset.raw || aiMsgElement.querySelector('.body')?.textContent || '';
+    
+    let subchatContainer = aiMsgElement.nextElementSibling;
+    if (subchatContainer && subchatContainer.classList.contains('subchat-container')) {
+      subchatContainer.querySelector('textarea')?.focus();
+      return;
+    }
+
+    subchatContainer = document.createElement('div');
+    subchatContainer.className = 'subchat-container msg-ai';
+    subchatContainer.style.cssText = 'margin-left: 2rem; border-left: 2px solid var(--border); padding-left: 1rem; margin-top: 0.5rem; margin-bottom: 1rem; background: var(--bg-alt); border-radius: 8px; padding: 1rem; position: relative;';
+    
+    const header = document.createElement('div');
+    header.style.cssText = 'font-weight: 600; margin-bottom: 0.5rem; color: var(--fg-muted); display: flex; justify-content: space-between; align-items: center;';
+    header.innerHTML = '<span><span style="margin-right: 6px;">💬</span> Ephemeral Sub-Chat</span>';
+    
+    const closeBtn = document.createElement('button');
+    closeBtn.innerHTML = '&times;';
+    closeBtn.className = 'msg-action-btn';
+    closeBtn.style.cssText = 'font-size: 1.2rem; background: transparent; border: none; cursor: pointer; color: var(--fg-muted); padding: 0 4px;';
+    closeBtn.onclick = () => subchatContainer.remove();
+    header.appendChild(closeBtn);
+    subchatContainer.appendChild(header);
+
+    const historyDiv = document.createElement('div');
+    historyDiv.className = 'subchat-history';
+    subchatContainer.appendChild(historyDiv);
+
+    const inputWrap = document.createElement('div');
+    inputWrap.style.cssText = 'display: flex; gap: 0.5rem; margin-top: 0.5rem; flex-direction: column;';
+
+    const input = document.createElement('textarea');
+    input.placeholder = 'Ask a follow-up about this message... (not saved in history)';
+    input.style.cssText = 'width: 100%; resize: vertical; min-height: 60px; padding: 8px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg); color: var(--fg); font-family: inherit;';
+    
+    const sendBtn = document.createElement('button');
+    sendBtn.textContent = 'Ask';
+    sendBtn.className = 'send-btn';
+    sendBtn.style.cssText = 'align-self: flex-end; padding: 6px 16px; border-radius: 4px; background: var(--accent); color: #fff; border: none; cursor: pointer; font-weight: 600;';
+    
+    inputWrap.appendChild(input);
+    inputWrap.appendChild(sendBtn);
+    subchatContainer.appendChild(inputWrap);
+
+    aiMsgElement.parentNode.insertBefore(subchatContainer, aiMsgElement.nextSibling);
+    input.focus();
+
+    let subchatHistory = [];
+    let buffer = ''; // buffer for partial chunks
+
+    const handleSend = async () => {
+      const text = input.value.trim();
+      if (!text) return;
+      input.value = '';
+      sendBtn.disabled = true;
+      input.disabled = true;
+      
+      const userMsg = document.createElement('div');
+      userMsg.className = 'msg msg-user';
+      userMsg.style.cssText = 'margin: 10px 0; padding: 8px; background: var(--bg-bubble-user); border-radius: 6px;';
+      userMsg.innerHTML = `<div class="role" style="font-weight: 600; font-size: 0.85em; margin-bottom: 4px; color: var(--fg-muted);">You</div><div class="body" style="white-space: pre-wrap;">${window.uiModule?.esc ? window.uiModule.esc(text) : text}</div>`;
+      historyDiv.appendChild(userMsg);
+
+      const aiMsg = document.createElement('div');
+      aiMsg.className = 'msg msg-ai';
+      aiMsg.style.cssText = 'margin: 10px 0; padding: 8px; border-radius: 6px;';
+      aiMsg.innerHTML = `<div class="role" style="font-weight: 600; font-size: 0.85em; margin-bottom: 4px; color: var(--fg-muted);">Assistant</div><div class="body">...</div>`;
+      historyDiv.appendChild(aiMsg);
+      const bodyEl = aiMsg.querySelector('.body');
+
+      const formData = new FormData();
+      formData.append('message', text);
+      formData.append('session', sessionModule.getCurrentSessionId());
+      formData.append('is_subchat', 'true');
+      formData.append('subchat_context_text', aiText);
+      formData.append('subchat_history', JSON.stringify(subchatHistory));
+      
+      try {
+        const response = await fetch('/api/chat_stream', { method: 'POST', body: formData });
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let done = false;
+        let streamedText = '';
+        bodyEl.innerHTML = '';
+
+        while (!done) {
+          const { value, done: doneReading } = await reader.read();
+          done = doneReading;
+          if (value) {
+            const chunk = decoder.decode(value, { stream: true });
+            buffer += chunk;
+            let newlineIdx;
+            while ((newlineIdx = buffer.indexOf('\n')) >= 0) {
+              const line = buffer.slice(0, newlineIdx).trim();
+              buffer = buffer.slice(newlineIdx + 1);
+              if (line.startsWith('data: ')) {
+                const dataStr = line.slice(6);
+                if (dataStr === '[DONE]') {
+                  done = true;
+                  break;
+                }
+                try {
+                  const data = JSON.parse(dataStr);
+                  let textToAppend = '';
+                  if (data.delta) {
+                    textToAppend = data.delta;
+                  } else if (data.type === 'chunk' && data.content) {
+                    textToAppend = data.content;
+                  } else if (data.type === 'tool_event' && data.content) {
+                    textToAppend = data.content;
+                  }
+                  
+                  if (textToAppend) {
+                    streamedText += textToAppend;
+                    if (window.markdownModule) {
+                      bodyEl.innerHTML = window.markdownModule.processWithThinking(window.markdownModule.squashOutsideCode(streamedText));
+                    } else {
+                      bodyEl.textContent = streamedText;
+                    }
+                  }
+                } catch (e) {}
+              }
+            }
+          }
+        }
+        subchatHistory.push({ role: 'user', content: text });
+        subchatHistory.push({ role: 'assistant', content: streamedText });
+        if (window.hljs) {
+           aiMsg.querySelectorAll('pre code').forEach(b => window.hljs.highlightElement(b));
+        }
+      } catch (e) {
+        bodyEl.textContent = 'Error: ' + e.message;
+      } finally {
+        sendBtn.disabled = false;
+        input.disabled = false;
+        input.focus();
+      }
+    };
+
+    sendBtn.onclick = handleSend;
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+        e.preventDefault();
+        handleSend();
+      }
+    });
+  }
+
   const chatModule = {
     init,
     initListeners,
@@ -4771,6 +4921,7 @@ import createResearchSynapse from './researchSynapse.js';
     setPendingContinue,
     regenerateFrom,
     forkFrom,
+    startSubChat,
     editUserMessage,
     editAIMessage,
     resendUserMessage,
