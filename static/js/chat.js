@@ -4826,6 +4826,7 @@ import createResearchSynapse from './researchSynapse.js';
       formData.append('message', text);
       formData.append('session', sessionModule.getCurrentSessionId());
       formData.append('is_subchat', 'true');
+      formData.append('mode', 'agent'); // Enable tools
       formData.append('subchat_context_text', aiText);
       formData.append('subchat_history', JSON.stringify(subchatHistory));
       
@@ -4837,6 +4838,7 @@ import createResearchSynapse from './researchSynapse.js';
         let done = false;
         let streamedText = '';
         bodyEl.innerHTML = '';
+        let lastRenderTime = 0;
 
         while (!done) {
           const { value, done: doneReading } = await reader.read();
@@ -4857,20 +4859,29 @@ import createResearchSynapse from './researchSynapse.js';
                 try {
                   const data = JSON.parse(dataStr);
                   let textToAppend = '';
+                  
                   if (data.delta) {
                     textToAppend = data.delta;
                   } else if (data.type === 'chunk' && data.content) {
                     textToAppend = data.content;
                   } else if (data.type === 'tool_event' && data.content) {
                     textToAppend = data.content;
+                  } else if (data.type === 'tool_start' && data.name) {
+                    textToAppend = `\n\n> 🛠️ **Running Tool:** \`${data.name}\`...\n\n`;
                   }
                   
                   if (textToAppend) {
                     streamedText += textToAppend;
-                    if (window.markdownModule) {
-                      bodyEl.innerHTML = window.markdownModule.processWithThinking(window.markdownModule.squashOutsideCode(streamedText));
-                    } else {
-                      bodyEl.textContent = streamedText;
+                    
+                    // Throttle DOM updates to avoid breaking markdown formatting mid-render
+                    const now = Date.now();
+                    if (now - lastRenderTime > 200) {
+                      if (window.markdownModule) {
+                        bodyEl.innerHTML = window.markdownModule.processWithThinking(window.markdownModule.squashOutsideCode(streamedText));
+                      } else {
+                        bodyEl.textContent = streamedText;
+                      }
+                      lastRenderTime = now;
                     }
                   }
                 } catch (e) {}
@@ -4878,6 +4889,15 @@ import createResearchSynapse from './researchSynapse.js';
             }
           }
         }
+        
+        // Final complete render
+        if (window.markdownModule) {
+          bodyEl.innerHTML = window.markdownModule.processWithThinking(window.markdownModule.squashOutsideCode(streamedText));
+          if (window.markdownModule.renderMermaid) window.markdownModule.renderMermaid(bodyEl);
+        } else {
+          bodyEl.textContent = streamedText;
+        }
+        
         subchatHistory.push({ role: 'user', content: text });
         subchatHistory.push({ role: 'assistant', content: streamedText });
         if (window.hljs) {
