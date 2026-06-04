@@ -4837,6 +4837,7 @@ import createResearchSynapse from './researchSynapse.js';
         const decoder = new TextDecoder();
         let done = false;
         let streamedText = '';
+        let finishedRoundsHTML = '';
         bodyEl.innerHTML = '';
         let lastRenderTime = 0;
 
@@ -4858,6 +4859,19 @@ import createResearchSynapse from './researchSynapse.js';
                 }
                 try {
                   const data = JSON.parse(dataStr);
+                  
+                  // Handle end of an agent intermediate round
+                  if (data.type === 'agent_step') {
+                    if (streamedText.trim() && chatRenderer && markdownModule) {
+                      let cleanMd = chatRenderer.stripToolBlocks(streamedText);
+                      if (cleanMd.trim()) {
+                        finishedRoundsHTML += markdownModule.createCollapsible(cleanMd, 'system reasoning');
+                      }
+                    }
+                    streamedText = '';
+                    continue;
+                  }
+
                   let textToAppend = '';
                   
                   if (data.delta) {
@@ -4879,12 +4893,12 @@ import createResearchSynapse from './researchSynapse.js';
                       if (markdownModule && chatRenderer) {
                         let dt = chatRenderer.stripToolBlocks(streamedText);
                         if (markdownModule.hasUnclosedThinkTag && markdownModule.hasUnclosedThinkTag(dt)) {
-                          bodyEl.innerHTML = '<div class="thinking-section" style="margin-bottom: 10px;"><div class="thinking-header" style="opacity: 0.7;"><div class="thinking-header-left">Thinking...</div></div></div>';
+                          bodyEl.innerHTML = finishedRoundsHTML + '<div class="thinking-section" style="margin-bottom: 10px;"><div class="thinking-header" style="opacity: 0.7;"><div class="thinking-header-left">Thinking...</div></div></div>';
                         } else {
-                          bodyEl.innerHTML = markdownModule.processWithThinking(markdownModule.squashOutsideCode(dt));
+                          bodyEl.innerHTML = finishedRoundsHTML + markdownModule.processWithThinking(markdownModule.squashOutsideCode(dt));
                         }
                       } else {
-                        bodyEl.textContent = streamedText;
+                        bodyEl.innerHTML = finishedRoundsHTML + `<div>${streamedText}</div>`;
                       }
                       lastRenderTime = now;
                     }
@@ -4898,10 +4912,10 @@ import createResearchSynapse from './researchSynapse.js';
         // Final complete render
         if (markdownModule && chatRenderer) {
           let dt = chatRenderer.stripToolBlocks(streamedText);
-          bodyEl.innerHTML = markdownModule.processWithThinking(markdownModule.squashOutsideCode(dt));
+          bodyEl.innerHTML = finishedRoundsHTML + markdownModule.processWithThinking(markdownModule.squashOutsideCode(dt));
           if (markdownModule.renderMermaid) markdownModule.renderMermaid(bodyEl);
         } else {
-          bodyEl.textContent = streamedText;
+          bodyEl.innerHTML = finishedRoundsHTML + `<div>${streamedText}</div>`;
         }
         
         subchatHistory.push({ role: 'user', content: text });
