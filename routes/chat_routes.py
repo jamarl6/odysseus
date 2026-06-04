@@ -396,6 +396,7 @@ def setup_chat_routes(
         incognito = str(form_data.get("incognito", "")).lower() == "true"
         is_subchat = str(form_data.get("is_subchat", "")).lower() == "true"
         subchat_context_text = form_data.get("subchat_context_text")
+        subchat_highlighted_text = form_data.get("subchat_highlighted_text")
         subchat_history = form_data.get("subchat_history")
         chat_mode = str(form_data.get("mode", "")).lower()  # 'chat' or 'agent'
         # Workspace: confine the agent's file/shell tools to this folder. Validate
@@ -470,8 +471,20 @@ def setup_chat_routes(
             sess.history = []
             incognito = True
             
-            if subchat_context_text:
-                sess.add_message(ChatMessage("system", f"Context for the user's follow-up question:\n{subchat_context_text}"))
+            # Only inject if this is the FIRST message in the subchat
+            # (if subchat_history is empty, we are just starting it)
+            is_first_subchat_msg = True
+            try:
+                if subchat_history and json.loads(subchat_history):
+                    is_first_subchat_msg = False
+            except Exception:
+                pass
+
+            if subchat_context_text and is_first_subchat_msg:
+                context_prompt = f"Context for the user's follow-up question:\n{subchat_context_text}"
+                if subchat_highlighted_text:
+                    context_prompt += f"\n\nThe user explicitly highlighted this specific part of the context to ask about:\n\"{subchat_highlighted_text}\""
+                sess.add_message(ChatMessage("system", context_prompt))
                 
             if subchat_history:
                 try:

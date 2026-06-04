@@ -4751,7 +4751,7 @@ import createResearchSynapse from './researchSynapse.js';
   }
 
   // Public API
-  export async function startSubChat(aiMsgElement) {
+  export async function startSubChat(aiMsgElement, highlightedText = null) {
     const aiText = aiMsgElement.dataset.raw || aiMsgElement.querySelector('.body')?.textContent || '';
     
     let subchatContainer = aiMsgElement.nextElementSibling;
@@ -4784,7 +4784,7 @@ import createResearchSynapse from './researchSynapse.js';
     inputWrap.style.cssText = 'display: flex; gap: 0.5rem; margin-top: 0.5rem; flex-direction: column;';
 
     const input = document.createElement('textarea');
-    input.placeholder = 'Ask a follow-up about this message... (not saved in history)';
+    input.placeholder = highlightedText ? 'Ask a follow-up about the highlighted text... (not saved in history)' : 'Ask a follow-up about this message... (not saved in history)';
     input.style.cssText = 'width: 100%; resize: vertical; min-height: 60px; padding: 8px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg); color: var(--fg); font-family: inherit;';
     
     const sendBtn = document.createElement('button');
@@ -4828,6 +4828,9 @@ import createResearchSynapse from './researchSynapse.js';
       formData.append('is_subchat', 'true');
       formData.append('mode', 'agent'); // Enable tools
       formData.append('subchat_context_text', aiText);
+      if (highlightedText) {
+        formData.append('subchat_highlighted_text', highlightedText);
+      }
       formData.append('subchat_history', JSON.stringify(subchatHistory));
       
       try {
@@ -4999,6 +5002,81 @@ import createResearchSynapse from './researchSynapse.js';
       node.classList.toggle('open');
     });
     window.__odysseus_thread_click_bound = true;
+  }
+
+  if (!window.__odysseus_subchat_selection_bound) {
+    let floatingBtn = null;
+
+    const hideFloatingBtn = () => {
+      if (floatingBtn && floatingBtn.parentNode) {
+        floatingBtn.parentNode.removeChild(floatingBtn);
+      }
+      floatingBtn = null;
+    };
+
+    document.addEventListener('selectionchange', () => {
+      const sel = window.getSelection();
+      if (!sel || sel.isCollapsed) {
+        hideFloatingBtn();
+      }
+    });
+
+    document.body.addEventListener('mouseup', (e) => {
+      // Small timeout to let selection settle
+      setTimeout(() => {
+        const sel = window.getSelection();
+        if (!sel || sel.isCollapsed) {
+          hideFloatingBtn();
+          return;
+        }
+
+        const trigger = localStorage.getItem('odysseus-subchat-trigger') || 'both';
+        if (trigger !== 'both' && trigger !== 'text') {
+          hideFloatingBtn();
+          return;
+        }
+
+        const range = sel.getRangeAt(0);
+        const container = range.commonAncestorContainer;
+        const msgNode = container.nodeType === 1 ? container.closest('.msg-ai') : container.parentElement?.closest('.msg-ai');
+        const bodyNode = container.nodeType === 1 ? container.closest('.body') : container.parentElement?.closest('.body');
+
+        if (!msgNode || !bodyNode) {
+          hideFloatingBtn();
+          return;
+        }
+
+        const text = sel.toString().trim();
+        if (!text) {
+          hideFloatingBtn();
+          return;
+        }
+
+        if (!floatingBtn) {
+          floatingBtn = document.createElement('button');
+          floatingBtn.className = 'msg-action-btn subchat-floating-btn';
+          floatingBtn.innerHTML = '💬 Ask a follow up';
+          floatingBtn.style.cssText = 'position: absolute; z-index: 1000; background: var(--bg-alt); border: 1px solid var(--border); padding: 4px 8px; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); cursor: pointer; color: var(--fg); font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 6px;';
+          document.body.appendChild(floatingBtn);
+        }
+
+        floatingBtn.onclick = (ev) => {
+          ev.preventDefault();
+          ev.stopPropagation();
+          hideFloatingBtn();
+          sel.removeAllRanges();
+          if (window.chatModule?.startSubChat) {
+            window.chatModule.startSubChat(msgNode, text);
+          }
+        };
+
+        const rect = range.getBoundingClientRect();
+        // Position below the selection
+        floatingBtn.style.top = (rect.bottom + window.scrollY + 8) + 'px';
+        floatingBtn.style.left = (rect.left + window.scrollX + (rect.width / 2) - 60) + 'px';
+      }, 50);
+    });
+    window.__odysseus_subchat_selection_bound = true;
   }
 
   export default chatModule;

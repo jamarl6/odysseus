@@ -1329,7 +1329,10 @@ export function createMsgFooter(msgElement) {
       e.stopPropagation();
       if (window.chatModule?.rewriteWith) window.chatModule.rewriteWith(msgElement, 'Explain your last response in simpler terms. Use plain language and short sentences.');
     }},
-    { id: 'subchat', icon: '💬', title: 'Ask follow-up (Sub-chat)', cls: 'msg-action-btn', handler(e) {
+    { id: 'subchat', icon: '💬', title: 'Ask follow-up (Sub-chat)', cls: 'msg-action-btn', available() {
+      const trigger = localStorage.getItem('odysseus-subchat-trigger') || 'both';
+      return trigger === 'both' || trigger === 'footer';
+    }, handler(e) {
       e.stopPropagation();
       if (window.chatModule?.startSubChat) window.chatModule.startSubChat(msgElement);
     }},

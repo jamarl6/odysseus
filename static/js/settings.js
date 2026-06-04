@@ -1609,6 +1609,7 @@ async function initAgentSettings() {
 function initAppearance() {
   syncAppearanceCheckboxes();
   syncPrivacyCheckboxes();
+  syncSubchatTrigger();
 
   modalEl.querySelectorAll('[data-ui-key]').forEach(function(chk) {
     chk.addEventListener('change', async function() {
@@ -1661,6 +1662,12 @@ function initAppearance() {
     });
   });
 
+  modalEl.querySelectorAll('[data-ui-subchat-trigger]').forEach(function(sel) {
+    sel.addEventListener('change', function() {
+      localStorage.setItem('odysseus-subchat-trigger', sel.value);
+    });
+  });
+
   var resetBtn = el('set-uiVisResetBtn');
   if (resetBtn) {
     resetBtn.addEventListener('click', function() {
@@ -1684,6 +1691,12 @@ function syncAppearanceCheckboxes() {
 function syncPrivacyCheckboxes() {
   modalEl.querySelectorAll('[data-privacy-key="sensitive-blur"]').forEach(function(chk) {
     chk.checked = localStorage.getItem('odysseus-sensitive-blur') === 'on';
+  });
+}
+
+function syncSubchatTrigger() {
+  modalEl.querySelectorAll('[data-ui-subchat-trigger]').forEach(function(sel) {
+    sel.value = localStorage.getItem('odysseus-subchat-trigger') || 'both';
   });
 }
 
