@@ -4876,8 +4876,8 @@ import createResearchSynapse from './researchSynapse.js';
                     // Throttle DOM updates to avoid breaking markdown formatting mid-render
                     const now = Date.now();
                     if (now - lastRenderTime > 200) {
-                      if (window.markdownModule) {
-                        bodyEl.innerHTML = window.markdownModule.processWithThinking(window.markdownModule.squashOutsideCode(streamedText));
+                      if (markdownModule) {
+                        bodyEl.innerHTML = markdownModule.processWithThinking(markdownModule.squashOutsideCode(streamedText));
                       } else {
                         bodyEl.textContent = streamedText;
                       }
@@ -4891,9 +4891,9 @@ import createResearchSynapse from './researchSynapse.js';
         }
         
         // Final complete render
-        if (window.markdownModule) {
-          bodyEl.innerHTML = window.markdownModule.processWithThinking(window.markdownModule.squashOutsideCode(streamedText));
-          if (window.markdownModule.renderMermaid) window.markdownModule.renderMermaid(bodyEl);
+        if (markdownModule) {
+          bodyEl.innerHTML = markdownModule.processWithThinking(markdownModule.squashOutsideCode(streamedText));
+          if (markdownModule.renderMermaid) markdownModule.renderMermaid(bodyEl);
         } else {
           bodyEl.textContent = streamedText;
         }
