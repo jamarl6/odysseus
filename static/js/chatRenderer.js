@@ -1334,7 +1334,8 @@ export function createMsgFooter(msgElement) {
       return trigger === 'both' || trigger === 'footer';
     }, handler(e) {
       e.stopPropagation();
-      if (window.chatModule?.startSubChat) window.chatModule.startSubChat(msgElement);
+      const btn = e.currentTarget;
+      if (window.chatModule?.startSubChat) window.chatModule.startSubChat(msgElement, null, btn);
     }},
     { id: 'fork', icon: '\u2ADD', title: 'Fork conversation', cls: 'msg-action-btn', handler(e) {
       e.stopPropagation();

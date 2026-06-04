@@ -4751,16 +4751,18 @@ import createResearchSynapse from './researchSynapse.js';
   }
 
   // Public API
-  export async function startSubChat(aiMsgElement, highlightedText = null) {
+  export async function startSubChat(aiMsgElement, highlightedText = null, triggerElement = null) {
     const aiText = aiMsgElement.dataset.raw || aiMsgElement.querySelector('.body')?.textContent || '';
     
-    let subchatContainer = aiMsgElement.nextElementSibling;
-    if (subchatContainer && subchatContainer.classList.contains('subchat-container')) {
-      subchatContainer.querySelector('textarea')?.focus();
+    if (triggerElement && triggerElement._subchatContainer) {
+      triggerElement._subchatContainer.style.display = 'block';
+      triggerElement._subchatContainer.querySelector('textarea')?.focus();
       return;
     }
 
-    subchatContainer = document.createElement('div');
+    let subchatContainer = document.createElement('div');
+    if (triggerElement) triggerElement._subchatContainer = subchatContainer;
+
     subchatContainer.className = 'subchat-container msg-ai';
     subchatContainer.style.cssText = 'margin-left: 2rem; border-left: 2px solid var(--border); padding-left: 1rem; margin-top: 0.5rem; margin-bottom: 1rem; background: var(--bg-alt); border-radius: 8px; padding: 1rem; position: relative;';
     
@@ -4772,7 +4774,27 @@ import createResearchSynapse from './researchSynapse.js';
     closeBtn.innerHTML = '&times;';
     closeBtn.className = 'msg-action-btn';
     closeBtn.style.cssText = 'font-size: 1.2rem; background: transparent; border: none; cursor: pointer; color: var(--fg-muted); padding: 0 4px;';
-    closeBtn.onclick = () => subchatContainer.remove();
+    closeBtn.onclick = () => {
+      if (subchatHistory.length > 0) {
+        subchatContainer.style.display = 'none';
+        if (triggerElement) {
+          triggerElement.classList.add('has-subchat');
+          triggerElement.style.borderBottom = '1px dotted var(--fg-muted)';
+        }
+      } else {
+        subchatContainer.remove();
+        if (triggerElement && triggerElement._subchatContainer) {
+          delete triggerElement._subchatContainer;
+        }
+        if (triggerElement && triggerElement.classList.contains('subchat-highlight-span')) {
+           const parent = triggerElement.parentNode;
+           if (parent) {
+             while (triggerElement.firstChild) parent.insertBefore(triggerElement.firstChild, triggerElement);
+             parent.removeChild(triggerElement);
+           }
+        }
+      }
+    };
     header.appendChild(closeBtn);
     subchatContainer.appendChild(header);
 
@@ -5056,7 +5078,7 @@ import createResearchSynapse from './researchSynapse.js';
           floatingBtn = document.createElement('button');
           floatingBtn.className = 'msg-action-btn subchat-floating-btn';
           floatingBtn.innerHTML = '💬 Ask a follow up';
-          floatingBtn.style.cssText = 'position: absolute; z-index: 1000; background: var(--bg-alt); border: 1px solid var(--border); padding: 4px 8px; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); cursor: pointer; color: var(--fg); font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 6px;';
+          floatingBtn.style.cssText = 'position: absolute; z-index: 1000; background: color-mix(in srgb, var(--bg-alt) 85%, var(--fg) 15%); border: 1px solid color-mix(in srgb, var(--border) 80%, var(--fg) 20%); padding: 4px 8px; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); cursor: pointer; color: var(--fg); font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 6px;';
           document.body.appendChild(floatingBtn);
         }
 
@@ -5064,9 +5086,25 @@ import createResearchSynapse from './researchSynapse.js';
           ev.preventDefault();
           ev.stopPropagation();
           hideFloatingBtn();
+          
+          let triggerSpan = null;
+          try {
+            triggerSpan = document.createElement('span');
+            triggerSpan.className = 'subchat-highlight-span';
+            triggerSpan.onclick = () => {
+              if (triggerSpan._subchatContainer) {
+                triggerSpan._subchatContainer.style.display = 'block';
+                triggerSpan._subchatContainer.querySelector('textarea')?.focus();
+              }
+            };
+            range.surroundContents(triggerSpan);
+          } catch (e) {
+            triggerSpan = null; // Fails if selection crosses HTML tags
+          }
           sel.removeAllRanges();
+          
           if (window.chatModule?.startSubChat) {
-            window.chatModule.startSubChat(msgNode, text);
+            window.chatModule.startSubChat(msgNode, text, triggerSpan);
           }
         };
 
