@@ -4876,8 +4876,13 @@ import createResearchSynapse from './researchSynapse.js';
                     // Throttle DOM updates to avoid breaking markdown formatting mid-render
                     const now = Date.now();
                     if (now - lastRenderTime > 200) {
-                      if (markdownModule) {
-                        bodyEl.innerHTML = markdownModule.processWithThinking(markdownModule.squashOutsideCode(streamedText));
+                      if (markdownModule && chatRenderer) {
+                        let dt = chatRenderer.stripToolBlocks(streamedText);
+                        if (markdownModule.hasUnclosedThinkTag && markdownModule.hasUnclosedThinkTag(dt)) {
+                          bodyEl.innerHTML = '<div class="thinking-section" style="margin-bottom: 10px;"><div class="thinking-header" style="opacity: 0.7;"><div class="thinking-header-left">Thinking...</div></div></div>';
+                        } else {
+                          bodyEl.innerHTML = markdownModule.processWithThinking(markdownModule.squashOutsideCode(dt));
+                        }
                       } else {
                         bodyEl.textContent = streamedText;
                       }
@@ -4891,8 +4896,9 @@ import createResearchSynapse from './researchSynapse.js';
         }
         
         // Final complete render
-        if (markdownModule) {
-          bodyEl.innerHTML = markdownModule.processWithThinking(markdownModule.squashOutsideCode(streamedText));
+        if (markdownModule && chatRenderer) {
+          let dt = chatRenderer.stripToolBlocks(streamedText);
+          bodyEl.innerHTML = markdownModule.processWithThinking(markdownModule.squashOutsideCode(dt));
           if (markdownModule.renderMermaid) markdownModule.renderMermaid(bodyEl);
         } else {
           bodyEl.textContent = streamedText;
