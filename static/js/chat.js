@@ -4838,6 +4838,7 @@ import createResearchSynapse from './researchSynapse.js';
         let done = false;
         let streamedText = '';
         let finishedRoundsHTML = '';
+        let _thinkOpen = false; // Track thinking state
         bodyEl.innerHTML = '';
         let lastRenderTime = 0;
 
@@ -4854,6 +4855,7 @@ import createResearchSynapse from './researchSynapse.js';
               if (line.startsWith('data: ')) {
                 const dataStr = line.slice(6);
                 if (dataStr === '[DONE]') {
+                  if (_thinkOpen) streamedText += '</think>'; // close if ended mid-thought
                   done = true;
                   break;
                 }
@@ -4862,6 +4864,10 @@ import createResearchSynapse from './researchSynapse.js';
                   
                   // Handle end of an agent intermediate round
                   if (data.type === 'agent_step') {
+                    if (_thinkOpen) {
+                      streamedText += '</think>';
+                      _thinkOpen = false;
+                    }
                     if (streamedText.trim() && chatRenderer && markdownModule) {
                       let cleanMd = chatRenderer.stripToolBlocks(streamedText);
                       if (cleanMd.trim()) {
@@ -4875,13 +4881,20 @@ import createResearchSynapse from './researchSynapse.js';
                   let textToAppend = '';
                   
                   if (data.delta) {
-                    textToAppend = data.delta;
+                    let _delta = data.delta;
+                    if (data.thinking) {
+                      if (!_thinkOpen) { _delta = '<think>' + _delta; _thinkOpen = true; }
+                    } else if (_thinkOpen) {
+                      _delta = '</think>' + _delta; _thinkOpen = false;
+                    }
+                    textToAppend = _delta;
                   } else if (data.type === 'chunk' && data.content) {
                     textToAppend = data.content;
                   } else if (data.type === 'tool_event' && data.content) {
                     textToAppend = data.content;
                   } else if (data.type === 'tool_start' && data.name) {
-                    textToAppend = `\n\n> 🛠️ **Running Tool:** \`${data.name}\`...\n\n`;
+                    if (_thinkOpen) { textToAppend += '</think>'; _thinkOpen = false; }
+                    textToAppend += `\n\n> 🛠️ **Running Tool:** \`${data.name}\`...\n\n`;
                   }
                   
                   if (textToAppend) {
