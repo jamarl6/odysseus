@@ -4797,8 +4797,12 @@ import createResearchSynapse from './researchSynapse.js';
         subchatContainer.style.boxShadow = '0 10px 40px rgba(0,0,0,0.5)';
         subchatContainer.style.display = 'flex';
         subchatContainer.style.flexDirection = 'column';
+        subchatContainer.style.background = 'var(--bg)';
+        subchatContainer.style.border = '1px solid var(--border)';
+        subchatContainer.style.borderRadius = '12px';
         historyDiv.style.flex = '1';
         historyDiv.style.overflowY = 'auto';
+        inputWrap.style.flexShrink = '0';
         expandBtn.innerHTML = '&#8601;';
         expandBtn.title = 'Restore';
       } else {
@@ -4811,8 +4815,13 @@ import createResearchSynapse from './researchSynapse.js';
         subchatContainer.style.margin = '0.5rem 0 1rem 2rem';
         subchatContainer.style.boxShadow = 'none';
         subchatContainer.style.display = 'block';
+        subchatContainer.style.background = 'var(--bg-alt)';
+        subchatContainer.style.border = 'none';
+        subchatContainer.style.borderLeft = '2px solid var(--border)';
+        subchatContainer.style.borderRadius = '8px';
         historyDiv.style.flex = 'none';
         historyDiv.style.overflowY = 'visible';
+        inputWrap.style.flexShrink = '1';
         expandBtn.innerHTML = '&#9974;';
         expandBtn.title = 'Maximize';
       }
