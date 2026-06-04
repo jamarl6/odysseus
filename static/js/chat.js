@@ -4774,12 +4774,58 @@ import createResearchSynapse from './researchSynapse.js';
     closeBtn.innerHTML = '&times;';
     closeBtn.className = 'msg-action-btn';
     closeBtn.style.cssText = 'font-size: 1.2rem; background: transparent; border: none; cursor: pointer; color: var(--fg-muted); padding: 0 4px;';
+    const headerBtns = document.createElement('div');
+    headerBtns.style.cssText = 'display: flex; gap: 8px; align-items: center;';
+
+    const expandBtn = document.createElement('button');
+    expandBtn.innerHTML = '&#9974;';
+    expandBtn.className = 'msg-action-btn';
+    expandBtn.title = 'Maximize';
+    expandBtn.style.cssText = 'font-size: 1.1rem; background: transparent; border: none; cursor: pointer; color: var(--fg-muted); padding: 0 4px;';
+    
+    let isMaximized = false;
+    expandBtn.onclick = () => {
+      isMaximized = !isMaximized;
+      if (isMaximized) {
+        subchatContainer.style.position = 'fixed';
+        subchatContainer.style.top = '5%';
+        subchatContainer.style.left = '5%';
+        subchatContainer.style.width = '90%';
+        subchatContainer.style.height = '90%';
+        subchatContainer.style.zIndex = '2000';
+        subchatContainer.style.margin = '0';
+        subchatContainer.style.boxShadow = '0 10px 40px rgba(0,0,0,0.5)';
+        subchatContainer.style.display = 'flex';
+        subchatContainer.style.flexDirection = 'column';
+        historyDiv.style.flex = '1';
+        historyDiv.style.overflowY = 'auto';
+        expandBtn.innerHTML = '&#8601;';
+        expandBtn.title = 'Restore';
+      } else {
+        subchatContainer.style.position = 'relative';
+        subchatContainer.style.top = 'auto';
+        subchatContainer.style.left = 'auto';
+        subchatContainer.style.width = 'auto';
+        subchatContainer.style.height = 'auto';
+        subchatContainer.style.zIndex = 'auto';
+        subchatContainer.style.margin = '0.5rem 0 1rem 2rem';
+        subchatContainer.style.boxShadow = 'none';
+        subchatContainer.style.display = 'block';
+        historyDiv.style.flex = 'none';
+        historyDiv.style.overflowY = 'visible';
+        expandBtn.innerHTML = '&#9974;';
+        expandBtn.title = 'Maximize';
+      }
+    };
+
     closeBtn.onclick = () => {
       if (subchatHistory.length > 0) {
         subchatContainer.style.display = 'none';
         if (triggerElement) {
           triggerElement.classList.add('has-subchat');
-          triggerElement.style.borderBottom = '1px dotted var(--fg-muted)';
+          triggerElement.style.textDecoration = 'underline';
+          triggerElement.style.textDecorationStyle = 'dotted';
+          triggerElement.style.textUnderlineOffset = '4px';
         }
       } else {
         subchatContainer.remove();
@@ -4795,7 +4841,9 @@ import createResearchSynapse from './researchSynapse.js';
         }
       }
     };
-    header.appendChild(closeBtn);
+    headerBtns.appendChild(expandBtn);
+    headerBtns.appendChild(closeBtn);
+    header.appendChild(headerBtns);
     subchatContainer.appendChild(header);
 
     const historyDiv = document.createElement('div');
@@ -5078,7 +5126,7 @@ import createResearchSynapse from './researchSynapse.js';
           floatingBtn = document.createElement('button');
           floatingBtn.className = 'msg-action-btn subchat-floating-btn';
           floatingBtn.innerHTML = '💬 Ask a follow up';
-          floatingBtn.style.cssText = 'position: absolute; z-index: 1000; background: color-mix(in srgb, var(--bg-alt) 85%, var(--fg) 15%); border: 1px solid color-mix(in srgb, var(--border) 80%, var(--fg) 20%); padding: 4px 8px; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); cursor: pointer; color: var(--fg); font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 6px;';
+          floatingBtn.style.cssText = 'position: absolute; z-index: 1000; background: var(--accent, #007bff); border: 1px solid var(--accent, #007bff); padding: 5px 10px; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); cursor: pointer; color: #ffffff; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px;';
           document.body.appendChild(floatingBtn);
         }
 
