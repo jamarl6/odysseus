@@ -1329,13 +1329,13 @@ export function createMsgFooter(msgElement) {
       e.stopPropagation();
       if (window.chatModule?.rewriteWith) window.chatModule.rewriteWith(msgElement, 'Explain your last response in simpler terms. Use plain language and short sentences.');
     }},
-    { id: 'subchat', icon: '\\u21B3', title: 'Ask follow-up (Sub-chat)', cls: 'msg-action-btn', available() {
+    { id: 'subchat', icon: '↳', title: 'Ask follow-up (Sub-chat)', cls: 'msg-action-btn', available() {
       const trigger = localStorage.getItem('odysseus-subchat-trigger') || 'both';
       return trigger === 'both' || trigger === 'footer';
     }, handler(e) {
       e.stopPropagation();
       const btn = e.currentTarget;
-      if (window.chatModule?.startSubChat) window.chatModule.startSubChat(msgElement, null, btn);
+      if (window.chatModule?.startSubChat) window.chatModule.startSubChat(msgElement, null, btn, msgElement._footerSubchat?.id, msgElement._footerSubchat?.history);
     }},
     { id: 'fork', icon: '\u2ADD', title: 'Fork conversation', cls: 'msg-action-btn', handler(e) {
       e.stopPropagation();
@@ -1372,6 +1372,12 @@ export function createMsgFooter(msgElement) {
     });
     if (action.html) btn.innerHTML = action.icon;
     btn.dataset.action = action.id;
+    if (action.id === 'subchat' && msgElement._footerSubchat) {
+      btn.classList.add('has-subchat');
+      btn.style.textDecoration = 'underline';
+      btn.style.textDecorationStyle = 'dotted';
+      btn.style.textUnderlineOffset = '4px';
+    }
     container.appendChild(btn);
   }
 
@@ -2314,6 +2320,44 @@ export function addMessage(role, content, modelName, metadata) {
       // survives a page refresh (live-stream path sets it via SSE, but
       // history reloads need this assignment).
       if (metadata?.memories_used?.length) wrap._memoriesUsed = metadata.memories_used;
+      
+      if (metadata?.subchats) {
+        Object.entries(metadata.subchats).forEach(([subchatId, data]) => {
+          if (data.trigger_text) {
+             let replaced = false;
+             const parts = b.innerHTML.split(data.trigger_text);
+             if (parts.length > 1) {
+                 b.innerHTML = parts[0] + `<span class="subchat-highlight-span has-subchat" style="text-decoration: underline dotted; text-underline-offset: 4px; cursor: pointer;" data-subchat-id="${subchatId}">` + data.trigger_text + `</span>` + parts.slice(1).join(data.trigger_text);
+                 replaced = true;
+             }
+             if (!replaced) {
+                 const escapedText = window.uiModule?.esc ? window.uiModule.esc(data.trigger_text) : data.trigger_text;
+                 const partsEsc = b.innerHTML.split(escapedText);
+                 if (partsEsc.length > 1) {
+                     b.innerHTML = partsEsc[0] + `<span class="subchat-highlight-span has-subchat" style="text-decoration: underline dotted; text-underline-offset: 4px; cursor: pointer;" data-subchat-id="${subchatId}">` + escapedText + `</span>` + partsEsc.slice(1).join(escapedText);
+                     replaced = true;
+                 }
+             }
+             if (!replaced) {
+                 b.innerHTML += `<div style="margin-top: 8px;"><span class="subchat-highlight-span has-subchat" style="text-decoration: underline dotted; text-underline-offset: 4px; cursor: pointer; color: var(--accent);" data-subchat-id="${subchatId}">↳ Sub-Chat: "${data.trigger_text.substring(0, 30)}..."</span></div>`;
+             }
+          } else {
+             wrap._footerSubchat = { id: subchatId, history: data.history };
+          }
+        });
+        b.querySelectorAll('.subchat-highlight-span').forEach(span => {
+             const sid = span.getAttribute('data-subchat-id');
+             if (sid && metadata.subchats[sid]) {
+                 span.onclick = (e) => {
+                     e.stopPropagation();
+                     if (window.chatModule?.startSubChat) {
+                         window.chatModule.startSubChat(wrap, metadata.subchats[sid].trigger_text, span, sid, metadata.subchats[sid].history);
+                     }
+                 };
+             }
+        });
+      }
+
       wrap.appendChild(createMsgFooter(wrap));
       if (metadata) displayMetrics(wrap, metadata);
     } else {

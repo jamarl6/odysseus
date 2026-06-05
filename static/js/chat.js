@@ -4751,8 +4751,11 @@ import createResearchSynapse from './researchSynapse.js';
   }
 
   // Public API
-  export async function startSubChat(aiMsgElement, highlightedText = null, triggerElement = null) {
+  export async function startSubChat(aiMsgElement, highlightedText = null, triggerElement = null, existingSubchatId = null, existingHistory = null) {
     const aiText = aiMsgElement.dataset.raw || aiMsgElement.querySelector('.body')?.textContent || '';
+    
+    let subchatId = existingSubchatId || `sub_${Date.now()}_${Math.floor(Math.random()*1000)}`;
+    if (triggerElement && !triggerElement._subchatId) triggerElement._subchatId = subchatId;
     
     if (triggerElement && triggerElement._subchatContainer) {
       triggerElement._subchatContainer.style.display = 'block';
@@ -4768,7 +4771,7 @@ import createResearchSynapse from './researchSynapse.js';
     
     const header = document.createElement('div');
     header.style.cssText = 'font-weight: 600; margin-bottom: 0.5rem; color: var(--fg-muted); display: flex; justify-content: space-between; align-items: center;';
-    header.innerHTML = '<span><span style="margin-right: 6px;">\\u21B3</span> Sub-Chat</span>';
+    header.innerHTML = '<span><span style="margin-right: 6px;">↳</span> Sub-Chat</span>';
     
     const closeBtn = document.createElement('button');
     closeBtn.innerHTML = '&times;';
@@ -4788,10 +4791,12 @@ import createResearchSynapse from './researchSynapse.js';
       isMaximized = !isMaximized;
       if (isMaximized) {
         subchatContainer.style.position = 'fixed';
-        subchatContainer.style.top = '5vh';
-        subchatContainer.style.left = '5vw';
-        subchatContainer.style.width = '90vw';
-        subchatContainer.style.height = '90vh';
+        subchatContainer.style.top = '2rem';
+        subchatContainer.style.bottom = '2rem';
+        subchatContainer.style.left = '2rem';
+        subchatContainer.style.right = '2rem';
+        subchatContainer.style.width = 'auto';
+        subchatContainer.style.height = 'auto';
         subchatContainer.style.zIndex = '2000';
         subchatContainer.style.margin = '0';
         subchatContainer.style.boxShadow = '0 10px 40px rgba(0,0,0,0.5)';
@@ -4877,7 +4882,7 @@ import createResearchSynapse from './researchSynapse.js';
     inputWrap.style.cssText = 'display: flex; gap: 0.5rem; margin-top: 0.5rem; flex-direction: column;';
 
     const input = document.createElement('textarea');
-    input.placeholder = highlightedText ? 'Ask a follow-up about the highlighted text... (not saved in history)' : 'Ask a follow-up about this message... (not saved in history)';
+    input.placeholder = highlightedText ? 'Ask a follow-up about the highlighted text...' : 'Ask a follow-up about this message...';
     input.style.cssText = 'width: 100%; resize: vertical; min-height: 60px; padding: 8px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg); color: var(--fg); font-family: inherit;';
     
     const sendBtn = document.createElement('button');
@@ -4892,7 +4897,23 @@ import createResearchSynapse from './researchSynapse.js';
     aiMsgElement.parentNode.insertBefore(subchatContainer, aiMsgElement.nextSibling);
     input.focus();
 
-    let subchatHistory = [];
+    let subchatHistory = existingHistory || [];
+    if (subchatHistory.length > 0) {
+      subchatHistory.forEach(msg => {
+         const div = document.createElement('div');
+         div.className = msg.role === 'user' ? 'msg msg-user' : 'msg msg-ai';
+         div.style.cssText = msg.role === 'user' 
+             ? 'margin-top: 10px; margin-bottom: 10px; padding: 8px 12px; background: var(--bg-bubble-user); border-radius: 12px;'
+             : 'margin-top: 10px; margin-bottom: 10px; padding: 8px 12px; border-radius: 12px;';
+         const roleName = msg.role === 'user' ? 'You' : 'Assistant';
+         const contentHtml = msg.role === 'user' 
+             ? (window.uiModule?.esc ? window.uiModule.esc(msg.content) : msg.content)
+             : (window.marked ? window.marked.parse(msg.content) : msg.content);
+         div.innerHTML = `<div class="role" style="font-weight: 600; font-size: 0.85em; margin-bottom: 4px; color: var(--fg-muted);">${roleName}</div><div class="body" style="white-space: pre-wrap;">${contentHtml}</div>`;
+         historyDiv.appendChild(div);
+      });
+    }
+
     let buffer = ''; // buffer for partial chunks
 
     const handleSend = async () => {
@@ -4924,6 +4945,9 @@ import createResearchSynapse from './researchSynapse.js';
       if (highlightedText) {
         formData.append('subchat_highlighted_text', highlightedText);
       }
+      formData.append('subchat_id', subchatId);
+      const parentDbId = aiMsgElement.dataset.dbId;
+      if (parentDbId) formData.append('subchat_parent_msg_id', parentDbId);
       formData.append('subchat_history', JSON.stringify(subchatHistory));
       
       try {

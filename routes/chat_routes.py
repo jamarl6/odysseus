@@ -398,6 +398,8 @@ def setup_chat_routes(
         subchat_context_text = form_data.get("subchat_context_text")
         subchat_highlighted_text = form_data.get("subchat_highlighted_text")
         subchat_history = form_data.get("subchat_history")
+        subchat_id = form_data.get("subchat_id")
+        subchat_parent_msg_id = form_data.get("subchat_parent_msg_id")
         chat_mode = str(form_data.get("mode", "")).lower()  # 'chat' or 'agent'
         # Workspace: confine the agent's file/shell tools to this folder. Validate
         # it's a real directory; ignore (no confinement) otherwise.
@@ -1092,14 +1094,43 @@ def setup_chat_routes(
                             yield chunk
                         elif chunk == "data: [DONE]\n\n":
                             if full_response:
-                                _saved_id = save_assistant_response(
-                                    sess, session_manager, session, full_response, last_metrics,
-                                    character_name=ctx.preset.character_name,
-                                    web_sources=web_sources,
-                                    rag_sources=ctx.rag_sources,
-                                    used_memories=ctx.used_memories,
-                                    incognito=incognito,
-                                )
+                                if is_subchat and subchat_parent_msg_id and subchat_id:
+                                    try:
+                                        _parent_sess = session_manager.get_session(session)
+                                        for m in _parent_sess.history:
+                                            m_meta = getattr(m, "metadata", None)
+                                            if isinstance(m_meta, dict) and m_meta.get("_db_id") == subchat_parent_msg_id:
+                                                if "subchats" not in m_meta:
+                                                    m_meta["subchats"] = {}
+                                                
+                                                full_history = []
+                                                if subchat_history:
+                                                    try:
+                                                        full_history = json.loads(subchat_history)
+                                                    except Exception:
+                                                        pass
+                                                full_history.append({"role": "user", "content": message})
+                                                
+                                                _clean_resp, _ = clean_thinking_for_save(full_response, {"model": sess.model})
+                                                full_history.append({"role": "assistant", "content": _clean_resp})
+                                                
+                                                m_meta["subchats"][subchat_id] = {
+                                                    "trigger_text": subchat_highlighted_text,
+                                                    "history": full_history
+                                                }
+                                                session_manager.save_sessions()
+                                                break
+                                    except Exception as e:
+                                        logger.error(f"Failed to persist subchat: {e}")
+                                else:
+                                    _saved_id = save_assistant_response(
+                                        sess, session_manager, session, full_response, last_metrics,
+                                        character_name=ctx.preset.character_name,
+                                        web_sources=web_sources,
+                                        rag_sources=ctx.rag_sources,
+                                        used_memories=ctx.used_memories,
+                                        incognito=incognito,
+                                    )
                                 if _saved_id:
                                     yield f'data: {json.dumps({"type": "message_saved", "id": _saved_id})}\n\n'
                                 run_post_response_tasks(
