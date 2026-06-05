@@ -4790,6 +4790,14 @@ import createResearchSynapse from './researchSynapse.js';
     expandBtn.onclick = () => {
       isMaximized = !isMaximized;
       if (isMaximized) {
+        if (!subchatContainer._placeholder) {
+            let placeholder = document.createElement('div');
+            placeholder.className = 'subchat-placeholder';
+            placeholder.style.display = 'none';
+            subchatContainer.parentNode.insertBefore(placeholder, subchatContainer);
+            subchatContainer._placeholder = placeholder;
+            document.body.appendChild(subchatContainer);
+        }
         subchatContainer.style.position = 'fixed';
         subchatContainer.style.top = '2rem';
         subchatContainer.style.bottom = '2rem';
@@ -4818,6 +4826,11 @@ import createResearchSynapse from './researchSynapse.js';
         expandBtn.innerHTML = '&#8601;';
         expandBtn.title = 'Restore';
       } else {
+        if (subchatContainer._placeholder) {
+            subchatContainer._placeholder.parentNode.insertBefore(subchatContainer, subchatContainer._placeholder);
+            subchatContainer._placeholder.remove();
+            delete subchatContainer._placeholder;
+        }
         subchatContainer.style.position = 'relative';
         subchatContainer.style.top = 'auto';
         subchatContainer.style.left = 'auto';
@@ -4847,6 +4860,7 @@ import createResearchSynapse from './researchSynapse.js';
     };
 
     closeBtn.onclick = () => {
+      if (isMaximized) { expandBtn.click(); }
       if (subchatHistory.length > 0) {
         subchatContainer.style.display = 'none';
         if (triggerElement) {
