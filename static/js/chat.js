@@ -5186,8 +5186,10 @@ import createResearchSynapse from './researchSynapse.js';
         if (!floatingBtn) {
           floatingBtn = document.createElement('button');
           floatingBtn.className = 'msg-action-btn subchat-floating-btn';
-          floatingBtn.innerHTML = '💬 Ask a follow up';
-          floatingBtn.style.cssText = 'position: absolute; z-index: 1000; background: var(--accent, #007bff); border: 1px solid var(--accent, #007bff); padding: 5px 10px; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); cursor: pointer; color: #ffffff; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px;';
+          floatingBtn.innerHTML = '<span style="margin-right: 4px; font-weight: bold;">↳</span> Ask a follow up';
+          floatingBtn.style.cssText = 'position: absolute; z-index: 1000; background: color-mix(in srgb, var(--bg) 92%, var(--fg)); border: 1px solid var(--border); padding: 6px 12px; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); cursor: pointer; color: var(--fg); font-size: 13px; font-weight: 500; display: flex; align-items: center; transition: background 0.2s;';
+          floatingBtn.onmouseenter = () => { floatingBtn.style.background = 'color-mix(in srgb, var(--bg) 85%, var(--fg))'; };
+          floatingBtn.onmouseleave = () => { floatingBtn.style.background = 'color-mix(in srgb, var(--bg) 92%, var(--fg))'; };
           document.body.appendChild(floatingBtn);
         }
 
