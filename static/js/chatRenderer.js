@@ -2323,7 +2323,7 @@ export function addMessage(role, content, modelName, metadata) {
       
       if (metadata?.subchats) {
         Object.entries(metadata.subchats).forEach(([subchatId, data]) => {
-          if (data.trigger_text) {
+          if (data.trigger_text && data.trigger_text !== "null" && data.trigger_text !== "") {
              let replaced = false;
              const parts = b.innerHTML.split(data.trigger_text);
              if (parts.length > 1) {
