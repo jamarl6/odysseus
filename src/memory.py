@@ -132,7 +132,7 @@ class MemoryManager:
         if owner is None:
             return entries
         owner_lower = owner.lower()
-        return [e for e in entries if e.get("owner", "").lower() == owner_lower]
+        return [e for e in entries if (e.get("owner") or "").lower() == owner_lower]
 
     def claim_ownerless(self, owner: str):
         """Assign all ownerless memory entries to the given owner."""
