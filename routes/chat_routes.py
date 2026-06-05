@@ -1114,10 +1114,17 @@ def setup_chat_routes(
                                                 _clean_resp, _ = clean_thinking_for_save(full_response, {"model": sess.model})
                                                 full_history.append({"role": "assistant", "content": _clean_resp})
                                                 
-                                                m_meta["subchats"][subchat_id] = {
+                                                # Create a new dict so SQLAlchemy detects the change to the JSON column
+                                                import copy
+                                                new_meta = copy.deepcopy(m_meta)
+                                                if "subchats" not in new_meta:
+                                                    new_meta["subchats"] = {}
+                                                
+                                                new_meta["subchats"][subchat_id] = {
                                                     "trigger_text": subchat_highlighted_text,
                                                     "history": full_history
                                                 }
+                                                m.metadata = new_meta
                                                 session_manager.save_sessions()
                                                 break
                                     except Exception as e:
