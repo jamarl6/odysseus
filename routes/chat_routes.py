@@ -473,11 +473,24 @@ def setup_chat_routes(
             sess.history = []
             incognito = True
 
-            if subchat_context_text:
-                context_prompt = f"The user is asking a follow-up question about the following context:\n\n<context>\n{subchat_context_text}\n</context>"
+            # Only inject if this is the FIRST message in the subchat
+            # (if subchat_history is empty, we are just starting it)
+            is_first_subchat_msg = True
+            try:
+                if subchat_history and json.loads(subchat_history):
+                    is_first_subchat_msg = False
+            except Exception:
+                pass
+
+            if is_first_subchat_msg:
+                prefix = ""
+                if subchat_context_text:
+                    prefix += f"<previous_response>\n{subchat_context_text}\n</previous_response>\n\n"
                 if subchat_highlighted_text:
-                    context_prompt += f"\n\nIMPORTANT: The user has specifically highlighted the following text selection and their question is PRIMARILY about this selection:\n<highlighted_selection>\n{subchat_highlighted_text}\n</highlighted_selection>\n\nPlease focus your answer on the highlighted selection."
-                sess.add_message(ChatMessage("system", context_prompt))
+                    prefix += f"I have a follow-up question regarding this specific highlighted part of your previous response:\n\"{subchat_highlighted_text}\"\n\n"
+                else:
+                    prefix += "I have a follow-up question regarding your previous response.\n\n"
+                message = prefix + f"My question is:\n{message}"
                 
             if subchat_history:
                 try:
