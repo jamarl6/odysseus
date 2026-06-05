@@ -4768,7 +4768,7 @@ import createResearchSynapse from './researchSynapse.js';
     
     const header = document.createElement('div');
     header.style.cssText = 'font-weight: 600; margin-bottom: 0.5rem; color: var(--fg-muted); display: flex; justify-content: space-between; align-items: center;';
-    header.innerHTML = '<span><span style="margin-right: 6px;">💬</span> Ephemeral Sub-Chat</span>';
+    header.innerHTML = '<span><span style="margin-right: 6px;">\\u21B3</span> Sub-Chat</span>';
     
     const closeBtn = document.createElement('button');
     closeBtn.innerHTML = '&times;';
@@ -4788,10 +4788,10 @@ import createResearchSynapse from './researchSynapse.js';
       isMaximized = !isMaximized;
       if (isMaximized) {
         subchatContainer.style.position = 'fixed';
-        subchatContainer.style.top = '5%';
-        subchatContainer.style.left = '5%';
-        subchatContainer.style.width = '90%';
-        subchatContainer.style.height = '90%';
+        subchatContainer.style.top = '5vh';
+        subchatContainer.style.left = '5vw';
+        subchatContainer.style.width = '90vw';
+        subchatContainer.style.height = '90vh';
         subchatContainer.style.zIndex = '2000';
         subchatContainer.style.margin = '0';
         subchatContainer.style.boxShadow = '0 10px 40px rgba(0,0,0,0.5)';
