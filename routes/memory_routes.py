@@ -55,15 +55,19 @@ def setup_memory_routes(memory_manager: MemoryManager, session_manager: SessionM
             raise HTTPException(404, "Session not found")
 
     def _verify_memory_owner(memory: dict, user: Optional[str]):
-        """Raise 404 if user doesn't own this memory.
+        """Reject operations on memories that belong to someone else.
 
         SECURITY: strict ownership — previously `mem_owner and mem_owner != user`
         allowed any user to read/edit/delete memories with an empty/null owner
-        field, which leaked legacy data across the multi-user deploy.
+        (from the pre-multi-user days). The null-owner gate tightened in v2.
         """
         if user is None:
             return  # Auth disabled
-        if memory.get("owner") != user:
+        mem_owner = memory.get("owner")
+        if mem_owner:
+            if mem_owner.lower() != user.lower():
+                raise HTTPException(404, "Memory not found")
+        elif mem_owner != user:
             raise HTTPException(404, "Memory not found")
 
     @router.post("/debug")

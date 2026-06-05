@@ -7,7 +7,7 @@ from typing import Optional, List
 
 from fastapi import APIRouter, HTTPException, Request, UploadFile, File
 from pydantic import BaseModel
-from sqlalchemy import or_, and_
+from sqlalchemy import or_, and_, func
 from dateutil.rrule import rrulestr
 
 from core.database import SessionLocal, CalendarCal, CalendarEvent
@@ -67,7 +67,7 @@ def _get_or_404_calendar(db, cal_id: str, owner: str) -> CalendarCal:
     # belongs to a different user, treat it as not-found. The previous
     # rule (`if cal.owner and cal.owner != owner`) silently allowed any
     # authenticated user to read/edit any calendar with owner=None.
-    if owner and (cal.owner is None or cal.owner != owner):
+    if owner and (cal.owner is None or cal.owner.lower() != owner.lower()):
         raise HTTPException(404, "Calendar not found")
     return cal
 
@@ -77,7 +77,7 @@ def _get_or_404_event(db, uid: str, owner: str) -> CalendarEvent:
     if not ev:
         raise HTTPException(404, "Event not found")
     cal = ev.calendar
-    if owner and cal and (cal.owner is None or cal.owner != owner):
+    if owner and cal and (cal.owner is None or cal.owner.lower() != owner.lower()):
         raise HTTPException(404, "Event not found")
     return ev
 
@@ -146,7 +146,7 @@ class EventUpdate(BaseModel):
 def _ensure_default_calendar(db, owner: str = None) -> CalendarCal:
     """Create default calendar if none exist for this owner."""
     owner = owner or FALLBACK_OWNER
-    cal = db.query(CalendarCal).filter(CalendarCal.owner == owner).first()
+    cal = db.query(CalendarCal).filter(func.lower(CalendarCal.owner) == owner.lower()).first()
     if not cal:
         cal = CalendarCal(
             id=str(uuid.uuid4()),
@@ -701,7 +701,7 @@ def setup_calendar_routes() -> APIRouter:
         db = SessionLocal()
         try:
             _ensure_default_calendar(db, owner)
-            cals = db.query(CalendarCal).filter(CalendarCal.owner == owner).all()
+            cals = db.query(CalendarCal).filter(func.lower(CalendarCal.owner) == owner.lower()).all()
             return {"calendars": [
                 {"name": c.name, "href": c.id, "color": c.color}
                 for c in cals
@@ -736,7 +736,7 @@ def setup_calendar_routes() -> APIRouter:
             # DTSTART year.
             q = db.query(CalendarEvent).join(CalendarCal).filter(
                 CalendarEvent.status != "cancelled",
-                CalendarCal.owner == owner,
+                func.lower(CalendarCal.owner) == owner.lower(),
                 or_(
                     # Non-recurring: event times must overlap the query window
                     and_(
@@ -789,7 +789,7 @@ def setup_calendar_routes() -> APIRouter:
                 # passed null-owner (legacy) rows, letting any authenticated
                 # user write events into them. Same null-owner gate as
                 # `_get_or_404_calendar`.
-                if cal and (cal.owner is None or cal.owner != owner):
+                if cal and (cal.owner is None or cal.owner.lower() != owner.lower()):
                     raise HTTPException(404, "Calendar not found")
             if not cal:
                 cal = _ensure_default_calendar(db, owner)
@@ -1012,7 +1012,7 @@ def setup_calendar_routes() -> APIRouter:
 
             target_cal = db.query(CalendarCal).filter(
                 CalendarCal.name == cal_display,
-                CalendarCal.owner == owner,
+                func.lower(CalendarCal.owner) == owner.lower(),
             ).first()
             if not target_cal:
                 target_cal = CalendarCal(

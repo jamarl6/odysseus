@@ -120,8 +120,10 @@ def owner_filter(query, model_cls, user: str, *, include_shared: bool = True):
     """Filter `query` so only rows owned by `user` (and optionally null-owner
     'shared' rows) come through. No-op when `user` is empty (single-user
     mode). Returns the modified query."""
+    from sqlalchemy import func
     if not user:
         return query
+    user_lower = user.strip().lower()
     if include_shared:
-        return query.filter((model_cls.owner == user) | (model_cls.owner == None))  # noqa: E711
-    return query.filter(model_cls.owner == user)
+        return query.filter((func.lower(model_cls.owner) == user_lower) | (model_cls.owner == None))  # noqa: E711
+    return query.filter(func.lower(model_cls.owner) == user_lower)

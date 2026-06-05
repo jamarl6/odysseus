@@ -600,9 +600,10 @@ class SessionManager:
         """Return sessions for a specific user (or all if username is None)."""
         if username is None:
             return self.sessions
+        user_lower = username.strip().lower()
         return {
             sid: s for sid, s in self.sessions.items()
-            if s.owner == username
+            if s.owner and s.owner.lower() == user_lower
         }
 
     def save_sessions(self):
