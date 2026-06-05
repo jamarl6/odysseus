@@ -4927,9 +4927,12 @@ import createResearchSynapse from './researchSynapse.js';
          const roleName = msg.role === 'user' ? 'You' : 'Assistant';
          const contentHtml = msg.role === 'user' 
              ? (window.uiModule?.esc ? window.uiModule.esc(msg.content) : msg.content)
-             : (window.marked ? window.marked.parse(msg.content) : msg.content);
+             : (markdownModule ? markdownModule.processWithThinking(markdownModule.squashOutsideCode(msg.content)) : msg.content);
          div.innerHTML = `<div class="role" style="font-weight: 600; font-size: 0.85em; margin-bottom: 4px; color: var(--fg-muted);">${roleName}</div><div class="body" style="white-space: pre-wrap;">${contentHtml}</div>`;
          historyDiv.appendChild(div);
+         if (msg.role !== 'user' && window.hljs) {
+             div.querySelectorAll('pre code').forEach(b => window.hljs.highlightElement(b));
+         }
       });
     }
 
