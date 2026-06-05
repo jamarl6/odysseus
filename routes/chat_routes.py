@@ -1099,7 +1099,7 @@ def setup_chat_routes(
                                         _parent_sess = session_manager.get_session(session)
                                         for m in _parent_sess.history:
                                             m_meta = getattr(m, "metadata", None)
-                                            if isinstance(m_meta, dict) and m_meta.get("_db_id") == subchat_parent_msg_id:
+                                            if isinstance(m_meta, dict) and str(m_meta.get("_db_id", "")) == str(subchat_parent_msg_id):
                                                 if "subchats" not in m_meta:
                                                     m_meta["subchats"] = {}
                                                 
@@ -1125,7 +1125,8 @@ def setup_chat_routes(
                                                     "history": full_history
                                                 }
                                                 m.metadata = new_meta
-                                                session_manager.save_sessions()
+                                                if "_db_id" in new_meta:
+                                                    session_manager.update_message_metadata(session, new_meta["_db_id"], new_meta)
                                                 break
                                     except Exception as e:
                                         logger.error(f"Failed to persist subchat: {e}")

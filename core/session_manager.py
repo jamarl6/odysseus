@@ -253,6 +253,24 @@ class SessionManager:
         finally:
             db.close()
 
+    def update_message_metadata(self, session_id: str, db_id: str, metadata: dict):
+        """Update a specific message's metadata in the database."""
+        db = SessionLocal()
+        try:
+            db_message = db.query(DbChatMessage).filter(
+                DbChatMessage.session_id == session_id,
+                DbChatMessage.id == db_id
+            ).first()
+            if db_message:
+                db_message.meta_data = json.dumps(metadata)
+                db.commit()
+                logger.debug(f"Updated metadata for message {db_id}")
+        except Exception as e:
+            logger.error(f"Error updating message metadata: {e}")
+            db.rollback()
+        finally:
+            db.close()
+
     def truncate_messages(self, session_id: str, keep_count: int) -> bool:
         """Truncate session history, keeping only the first `keep_count` messages."""
         session = self.get_session(session_id)
