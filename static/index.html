@@ -894,68 +894,20 @@
           <span id="assistant-notif-dot" class="sidebar-notif-dot" style="display:none"></span>
         </div>
 
-        <div class="session-folder" id="tool-fitnesscoach-folder" style="margin-top: 4px;">
-          <div class="session-folder-header">
-            <span class="folder-toggle" id="tool-fitnesscoach-toggle">▶</span>
-            <span class="folder-name">Fitness Coach</span>
-            <button class="icon-btn action-new-session" id="tool-fitnesscoach-new-btn" title="New Session" style="margin-left: auto; background: none; border: none; color: inherit; cursor: pointer; padding: 2px;">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-            </button>
-          </div>
-          <div class="session-folder-content" id="tool-fitnesscoach-children" style="display:none;">
-             <!-- JS will populate sessions here -->
-          </div>
+        <div class="list-item" id="tool-fitnesscoach-folder" style="cursor: pointer;">
+          <span class="folder-toggle" id="tool-fitnesscoach-toggle" style="margin-right: 8px; font-size: 10px; opacity: 0.7;">▶</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;opacity:0.5;">
+            <path d="M12 2v20"/>
+            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+          </svg>
+          <span class="grow" style="margin-left: 8px;">Fitness Coach</span>
+          <button type="button" class="list-item-plus-btn action-new-session" id="tool-fitnesscoach-new-btn" title="New Session">
+            <svg class="list-item-plus-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:11px;height:11px;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
         </div>
-        <script>
-          document.getElementById('tool-fitnesscoach-new-btn').addEventListener('click', async (e) => {
-             e.stopPropagation(); // prevent folder toggle
-             const fd = new FormData();
-             fd.append('name', '[Fitness Coach]');
-             fd.append('folder', 'Fitness Coach');
-             
-             // Get current or default model config
-             let epUrl = '', model = '';
-             if (window.sessionModule) {
-                 const current = window.sessionModule.getSessions().find(s => s.id === window.sessionModule.getCurrentSessionId());
-                 if (current && current.endpoint_url && current.model) {
-                     epUrl = current.endpoint_url;
-                     model = current.model;
-                 } else if (window.__odysseusDefaultChat) {
-                     epUrl = window.__odysseusDefaultChat.endpoint_url;
-                     model = window.__odysseusDefaultChat.model;
-                 }
-             }
-             if (epUrl) fd.append('endpoint_url', epUrl);
-             if (model) fd.append('model', model);
-             fd.append('skip_validation', 'true');
-
-             try {
-                const res = await fetch('/api/session', { method: 'POST', body: fd });
-                if (res.ok) {
-                   const data = await res.json();
-                   if (window.sessionModule) {
-                       // Force UI to switch to chat layout
-                       const wp = document.getElementById('workspace-panel');
-                       const cp = document.getElementById('chat-panel');
-                       if (wp) wp.style.display = 'none';
-                       if (cp) cp.style.display = 'flex';
-                       if (window.innerWidth <= 768) {
-                           const sb = document.getElementById('sidebar');
-                           const bd = document.getElementById('sidebar-backdrop');
-                           if (sb) sb.classList.add('hidden');
-                           if (bd) bd.classList.remove('visible');
-                       }
-                       await window.sessionModule.loadSessions();
-                       window.sessionModule.selectSession(data.id);
-                       
-                       // Open folder
-                       document.getElementById('tool-fitnesscoach-folder').classList.add('open');
-                       document.getElementById('tool-fitnesscoach-children').style.display = 'block';
-                   }
-                }
-             } catch(e) { console.error('Failed to create fitness coach session', e); }
-          });
-        </script>
+        <div class="folder-children" id="tool-fitnesscoach-children" style="display:none; padding-left: 20px;">
+           <!-- JS will populate sessions here -->
+        </div>
 
         <div class="list-item" id="tool-theme-btn">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"

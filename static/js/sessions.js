@@ -767,7 +767,9 @@ function _renderFitnessCoachSessions(fcSessions) {
 function initFitnessCoachFolder() {
   const folder = document.getElementById('tool-fitnesscoach-folder');
   const toggle = document.getElementById('tool-fitnesscoach-toggle');
-  if (!folder || !toggle) return;
+  const newBtn = document.getElementById('tool-fitnesscoach-new-btn');
+  if (!folder || !toggle || !newBtn) return;
+  
   // Make folder clickable to expand/collapse
   folder.addEventListener('click', (e) => {
     // If clicking the new session button, don't collapse
@@ -777,6 +779,64 @@ function initFitnessCoachFolder() {
     toggle.textContent = isOpen ? '\u25BC' : '\u25B6';
     const children = document.getElementById('tool-fitnesscoach-children');
     if (children) children.style.display = isOpen ? 'block' : 'none';
+  });
+
+  // Handle + button click to create new fitness coach session
+  newBtn.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    
+    // Find the best endpoint_url to use
+    let epUrl = '', model = '';
+    const current = sessions.find(s => s.id === currentSessionId);
+    if (current && current.endpoint_url && current.model) {
+      epUrl = current.endpoint_url;
+      model = current.model;
+    } else {
+      // Look for any existing session to borrow its endpoint/model
+      const anySession = sessions.find(s => s.endpoint_url && s.model && !s.archived && s.folder !== 'Fitness Coach');
+      if (anySession) {
+        epUrl = anySession.endpoint_url;
+        model = anySession.model;
+      }
+    }
+    
+    const fd = new FormData();
+    fd.append('name', '[Fitness Coach]');
+    fd.append('folder', 'Fitness Coach');
+    if (epUrl) fd.append('endpoint_url', epUrl);
+    if (model) fd.append('model', model);
+    fd.append('skip_validation', 'true');
+
+    try {
+      const res = await fetch('/api/session', { method: 'POST', body: fd });
+      if (res.ok) {
+        const data = await res.json();
+        // Force UI to switch to chat layout
+        const wp = document.getElementById('workspace-panel');
+        const cp = document.getElementById('chat-panel');
+        if (wp) wp.style.display = 'none';
+        if (cp) cp.style.display = 'flex';
+        if (window.innerWidth <= 768) {
+          const sb = document.getElementById('sidebar');
+          const bd = document.getElementById('sidebar-backdrop');
+          if (sb) sb.classList.add('hidden');
+          if (bd) bd.classList.remove('visible');
+        }
+        await loadSessions();
+        selectSession(data.id);
+        
+        // Open folder to show the new session
+        folder.classList.add('open');
+        toggle.textContent = '\u25BC';
+        const children = document.getElementById('tool-fitnesscoach-children');
+        if (children) children.style.display = 'block';
+      } else {
+        const text = await res.text();
+        console.error('Failed to create fitness coach session', text);
+      }
+    } catch(err) {
+      console.error('Failed to create fitness coach session', err);
+    }
   });
 }
 // Call it once
