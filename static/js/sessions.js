@@ -3220,31 +3220,42 @@ async function updateFitnessDashboard(meta) {
   const dash = document.getElementById('fitness-dashboard');
   if (!dash) return;
   if (meta && meta.folder === 'Fitness Coach') {
-    dash.style.display = 'grid';
+    dash.style.display = 'flex';
     try {
       const res = await fetch(`${typeof API_BASE !== 'undefined' ? API_BASE : ''}/api/fitness_coach/dashboard`);
       const data = await res.json();
       
-      const rScore = document.getElementById('fitness-recovery-score');
-      const rTrend = document.getElementById('fitness-recovery-trend');
-      const rText = document.getElementById('fitness-recovery-text');
-      if (rScore) rScore.textContent = data.recovery?.score || '--';
-      if (rTrend) rTrend.textContent = data.recovery?.trend || '';
-      if (rText) rText.textContent = data.recovery?.text || '';
+      const setCircle = (prefix, val, goal, text) => {
+        let percent = 0;
+        let isNumber = false;
+        if (typeof val === 'number') {
+           isNumber = true;
+           if (goal > 0) percent = Math.min(100, (val / goal) * 100);
+           else percent = Math.min(100, val);
+        }
+        
+        const path = document.getElementById(`fitness-${prefix}-path`);
+        const scoreText = document.getElementById(`fitness-${prefix}-score`);
+        const subText = document.getElementById(`fitness-${prefix}-text`);
+        
+        if (path) {
+          path.style.strokeDasharray = `${percent}, 100`;
+          const hue = Math.floor((percent / 100) * 120);
+          path.style.stroke = isNumber ? `hsl(${hue}, 80%, 50%)` : 'color-mix(in srgb, var(--fg) 20%, transparent)';
+        }
+        
+        if (scoreText) {
+          if (!isNumber) scoreText.textContent = '--';
+          else if (goal > 0) scoreText.textContent = `${val}`;
+          else scoreText.textContent = `${Math.round(percent)}%`;
+        }
+        
+        if (subText) subText.textContent = text || 'Waiting...';
+      };
 
-      const cScore = document.getElementById('fitness-condition-score');
-      const cTrend = document.getElementById('fitness-condition-trend');
-      const cText = document.getElementById('fitness-condition-text');
-      if (cScore) cScore.textContent = data.condition?.score || '--';
-      if (cTrend) cTrend.textContent = data.condition?.trend || '';
-      if (cText) cText.textContent = data.condition?.text || '';
-
-      const mScore = document.getElementById('fitness-movement-score');
-      const mUnit = document.getElementById('fitness-movement-unit');
-      const mText = document.getElementById('fitness-movement-text');
-      if (mScore) mScore.textContent = `${data.movement?.current || 0} / ${data.movement?.goal || 0}`;
-      if (mUnit) mUnit.textContent = data.movement?.unit || 'kcal';
-      if (mText) mText.textContent = data.movement?.text || '';
+      setCircle('recovery', data.recovery?.score, 100, data.recovery?.text);
+      setCircle('condition', data.condition?.score, 100, data.condition?.text);
+      setCircle('movement', data.movement?.current, data.movement?.goal || 1000, data.movement?.text);
 
     } catch (e) {
       console.error('Failed to fetch fitness dashboard data', e);
