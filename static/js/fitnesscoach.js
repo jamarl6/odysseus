@@ -132,20 +132,35 @@ chatInput.addEventListener('keydown', (e) => {
     }
 });
 
-Modals.register('fitnesscoach-modal', {
-    railBtnId: 'tool-fitnesscoach-btn',
-    restoreFn: () => {
-        getCoachSession(); // Prefetch on open
-        if (chatContainer.children.length === 0) {
-            appendMessage('assistant', 'Hallo! Ich bin dein persönlicher Fitness Coach. Wie kann ich dir heute helfen? Ich verwalte deine Ziele und Trainingspläne sicher in deinen lokalen Dateien.');
-        }
-        setTimeout(() => chatInput.focus(), 100);
-    },
-    closeFn: () => {}
-});
+function openModal() {
+    const modal = document.getElementById('fitnesscoach-modal');
+    modal.classList.remove('hidden', 'modal-minimized');
+    modal.style.display = 'flex';
+
+    if (!Modals.isRegistered('fitnesscoach-modal')) {
+        Modals.register('fitnesscoach-modal', {
+            railBtnId: 'tool-fitnesscoach-btn',
+            sidebarBtnId: 'tool-fitnesscoach-btn',
+            restoreFn: () => {
+                getCoachSession();
+                setTimeout(() => chatInput.focus(), 100);
+            },
+            closeFn: () => {}
+        });
+        Modals.injectMinimizeButton(modal, 'fitnesscoach-modal');
+    }
+
+    getCoachSession();
+    if (chatContainer.children.length === 0) {
+        appendMessage('assistant', 'Hallo! Ich bin dein persönlicher Fitness Coach. Wie kann ich dir heute helfen? Ich verwalte deine Ziele und Trainingspläne sicher in deinen lokalen Dateien.');
+    }
+    setTimeout(() => chatInput.focus(), 100);
+}
 
 document.getElementById('tool-fitnesscoach-btn').addEventListener('click', () => {
-    Modals.toggle('fitnesscoach-modal');
+    if (!Modals.toggle('fitnesscoach-modal')) {
+        openModal();
+    }
 });
 
 document.getElementById('close-fitnesscoach-modal').addEventListener('click', () => {
