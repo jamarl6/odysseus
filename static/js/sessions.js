@@ -3216,4 +3216,41 @@ const sessionModule = {
 
 export { updateModelPicker };
 
+async function updateFitnessDashboard(meta) {
+  const dash = document.getElementById('fitness-dashboard');
+  if (!dash) return;
+  if (meta && meta.folder === 'Fitness Coach') {
+    dash.style.display = 'grid';
+    try {
+      const res = await fetch(`${typeof API_BASE !== 'undefined' ? API_BASE : ''}/api/fitness_coach/dashboard`);
+      const data = await res.json();
+      
+      const rScore = document.getElementById('fitness-recovery-score');
+      const rTrend = document.getElementById('fitness-recovery-trend');
+      const rText = document.getElementById('fitness-recovery-text');
+      if (rScore) rScore.textContent = data.recovery?.score || '--';
+      if (rTrend) rTrend.textContent = data.recovery?.trend || '';
+      if (rText) rText.textContent = data.recovery?.text || '';
+
+      const cScore = document.getElementById('fitness-condition-score');
+      const cTrend = document.getElementById('fitness-condition-trend');
+      const cText = document.getElementById('fitness-condition-text');
+      if (cScore) cScore.textContent = data.condition?.score || '--';
+      if (cTrend) cTrend.textContent = data.condition?.trend || '';
+      if (cText) cText.textContent = data.condition?.text || '';
+
+      const mScore = document.getElementById('fitness-movement-score');
+      const mUnit = document.getElementById('fitness-movement-unit');
+      const mText = document.getElementById('fitness-movement-text');
+      if (mScore) mScore.textContent = `${data.movement?.current || 0} / ${data.movement?.goal || 0}`;
+      if (mUnit) mUnit.textContent = data.movement?.unit || 'kcal';
+      if (mText) mText.textContent = data.movement?.text || '';
+
+    } catch (e) {
+      console.error('Failed to fetch fitness dashboard data', e);
+    }
+  } else {
+    dash.style.display = 'none';
+  }
+}
 export default sessionModule;
