@@ -749,6 +749,44 @@ export function renderSessionList() {
   _renderRAF = requestAnimationFrame(_renderSessionListImpl);
 }
 
+function _renderFitnessCoachSessions(fcSessions) {
+  const container = document.getElementById('tool-fitnesscoach-children');
+  if (!container) return;
+  
+  // Sort newest first
+  fcSessions.sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
+  
+  const frag = document.createDocumentFragment();
+  fcSessions.forEach(s => frag.appendChild(createSessionItem(s)));
+  
+  container.innerHTML = '';
+  container.appendChild(frag);
+}
+
+// Ensure the folder toggle logic exists
+function initFitnessCoachFolder() {
+  const folder = document.getElementById('tool-fitnesscoach-folder');
+  if (!folder) return;
+  // Make folder clickable to expand/collapse
+  folder.addEventListener('click', (e) => {
+    // If clicking the new session button, don't collapse
+    if (e.target.closest('.action-new-session')) return;
+    folder.classList.toggle('open');
+    const children = document.getElementById('tool-fitnesscoach-children');
+    if (children) children.style.display = folder.classList.contains('open') ? 'block' : 'none';
+  });
+}
+// Call it once
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initFitnessCoachFolder);
+} else {
+  initFitnessCoachFolder();
+}
+
+function _postRenderSessionList(list) {
+  _renderFitnessCoachSessions(sessions.filter(s => s.folder === 'Fitness Coach' && !s.archived));
+}
+
 function _renderSessionListImpl() {
   _renderRAF = null;
   const list = uiModule.el('session-list');
@@ -756,7 +794,9 @@ function _renderSessionListImpl() {
 
   // Get saved order from localStorage
   const savedOrder = Storage.get('session-order');
-  let orderedSessions = sessions.filter(s => !s.archived && s.folder !== 'Assistant' && !_isIncognitoSession(s.id) && (s.name || '').trim() !== 'Nobody' && (s.name || '').trim() !== 'Incognito');
+  // Separate Fitness Coach sessions from the main list
+  const fcSessions = sessions.filter(s => s.folder === 'Fitness Coach' && !s.archived);
+  let orderedSessions = sessions.filter(s => !s.archived && s.folder !== 'Assistant' && s.folder !== 'Fitness Coach' && !_isIncognitoSession(s.id) && (s.name || '').trim() !== 'Nobody' && (s.name || '').trim() !== 'Incognito');
 
   if (savedOrder) {
     try {
@@ -828,6 +868,7 @@ function _renderSessionListImpl() {
     list.innerHTML = '';
     list.appendChild(_frag);
     _postRenderSessionList(list);
+    _renderFitnessCoachSessions(fcSessions);
     return;
   }
 

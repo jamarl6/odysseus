@@ -413,9 +413,8 @@ def setup_chat_routes(
             finally:
                 _sess_db.close()
         if is_fitnesscoach:
-            from src.config import config
             _u = get_current_user(request) or "default"
-            workspace = os.path.realpath(os.path.expanduser(str(config.data.data_dir / "users" / _u / "fitness_data")))
+            workspace = os.path.abspath(os.path.join("data", "users", _u, "fitness_data"))
             os.makedirs(workspace, exist_ok=True)
             chat_mode = "agent"
         else:
