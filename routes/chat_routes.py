@@ -407,7 +407,7 @@ def setup_chat_routes(
         if not is_fitnesscoach and session:
             _sess_db = SessionLocal()
             try:
-                _db_s = _sess_db.query(DbSession).filter(DbSession.id == session).first()
+                _db_s = _sess_db.query(DBSession).filter(DBSession.id == session).first()
                 if _db_s and _db_s.folder == "Fitness Coach":
                     is_fitnesscoach = True
             finally:

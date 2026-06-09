@@ -776,7 +776,7 @@ function initFitnessCoachFolder() {
     if (e.target.closest('.action-new-session')) return;
     folder.classList.toggle('open');
     const isOpen = folder.classList.contains('open');
-    toggle.textContent = isOpen ? '\u25BC' : '\u25B6';
+    toggle.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(-90deg)';
     const children = document.getElementById('tool-fitnesscoach-children');
     if (children) children.style.display = isOpen ? 'block' : 'none';
   });
