@@ -894,23 +894,17 @@
           <span id="assistant-notif-dot" class="sidebar-notif-dot" style="display:none"></span>
         </div>
 
-        <div class="list-item section-folder has-children" id="tool-fitnesscoach-folder">
-          <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="9 18 15 12 9 6"></polyline>
-          </svg>
-          <svg class="icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-            stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-            style="flex-shrink:0;opacity:0.5;">
-            <path d="M12 2v20"/>
-            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-          </svg>
-          <span class="grow">Fitness Coach</span>
-          <button class="icon-btn action-new-session" id="tool-fitnesscoach-new-btn" title="New Session">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-          </button>
-        </div>
-        <div class="folder-children" id="tool-fitnesscoach-children" style="display:none;">
-           <!-- JS will populate sessions here -->
+        <div class="session-folder" id="tool-fitnesscoach-folder" style="margin-top: 4px;">
+          <div class="session-folder-header">
+            <span class="folder-toggle" id="tool-fitnesscoach-toggle">▶</span>
+            <span class="folder-name">Fitness Coach</span>
+            <button class="icon-btn action-new-session" id="tool-fitnesscoach-new-btn" title="New Session" style="margin-left: auto; background: none; border: none; color: inherit; cursor: pointer; padding: 2px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            </button>
+          </div>
+          <div class="session-folder-content" id="tool-fitnesscoach-children" style="display:none;">
+             <!-- JS will populate sessions here -->
+          </div>
         </div>
         <script>
           document.getElementById('tool-fitnesscoach-new-btn').addEventListener('click', async (e) => {

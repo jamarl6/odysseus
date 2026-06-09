@@ -766,14 +766,17 @@ function _renderFitnessCoachSessions(fcSessions) {
 // Ensure the folder toggle logic exists
 function initFitnessCoachFolder() {
   const folder = document.getElementById('tool-fitnesscoach-folder');
-  if (!folder) return;
+  const toggle = document.getElementById('tool-fitnesscoach-toggle');
+  if (!folder || !toggle) return;
   // Make folder clickable to expand/collapse
   folder.addEventListener('click', (e) => {
     // If clicking the new session button, don't collapse
     if (e.target.closest('.action-new-session')) return;
     folder.classList.toggle('open');
+    const isOpen = folder.classList.contains('open');
+    toggle.textContent = isOpen ? '\u25BC' : '\u25B6';
     const children = document.getElementById('tool-fitnesscoach-children');
-    if (children) children.style.display = folder.classList.contains('open') ? 'block' : 'none';
+    if (children) children.style.display = isOpen ? 'block' : 'none';
   });
 }
 // Call it once
@@ -781,10 +784,6 @@ if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initFitnessCoachFolder);
 } else {
   initFitnessCoachFolder();
-}
-
-function _postRenderSessionList(list) {
-  _renderFitnessCoachSessions(sessions.filter(s => s.folder === 'Fitness Coach' && !s.archived));
 }
 
 function _renderSessionListImpl() {
@@ -1130,6 +1129,7 @@ function _renderSessionListImpl() {
   list.appendChild(_frag);
 
   _postRenderSessionList(list);
+  _renderFitnessCoachSessions(fcSessions);
 }
 
 /** Shared post-render: highlight, keyboard nav, swipe hint, drag sort */
