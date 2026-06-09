@@ -894,6 +894,16 @@
           <span id="assistant-notif-dot" class="sidebar-notif-dot" style="display:none"></span>
         </div>
 
+        <div class="list-item" id="tool-fitnesscoach-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+            style="flex-shrink:0;opacity:0.5;">
+            <path d="M12 2v20"/>
+            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+          </svg>
+          <span class="grow">Fitness Coach</span>
+        </div>
+
         <div class="list-item" id="tool-theme-btn">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
             stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
@@ -2256,6 +2266,27 @@
     </div>
   </div>
 
+  <!-- Fitness Coach Modal -->
+  <div id="fitnesscoach-modal" class="modal hidden">
+    <div class="modal-content" role="dialog" aria-label="Fitness Coach" style="background:var(--bg); max-width:800px; height:80vh; display:flex; flex-direction:column;">
+      <div class="modal-header">
+        <h4><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Fitness Coach</h4>
+        <button class="close-btn" id="close-fitnesscoach-modal" aria-label="Close Fitness Coach modal">✖</button>
+      </div>
+      <div class="modal-body" style="flex:1; display:flex; flex-direction:column; overflow:hidden; padding:0;">
+        <div id="fitnesscoach-chat-container" class="chat-container" style="flex:1; overflow-y:auto; padding:15px;">
+            <!-- Chat history goes here -->
+        </div>
+        <div class="chat-input-area" style="padding:15px; border-top:1px solid var(--bubble-border);">
+            <div class="input-wrapper" style="display:flex; gap:10px;">
+                <textarea id="fitnesscoach-input" placeholder="Nachricht an den Fitness Coach..." rows="1" style="flex:1; resize:none; padding:10px; border-radius:8px; border:1px solid var(--bubble-border); background:var(--input-bg); color:inherit;"></textarea>
+                <button id="fitnesscoach-send-btn" class="primary-btn" style="align-self:flex-end; padding:10px 15px;">Senden</button>
+            </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Search overlay (Ctrl+K command palette) -->
   <div class="search-overlay hidden" id="search-overlay">
     <div class="search-popup">
@@ -2299,6 +2330,7 @@
 <script type="module" src="/static/js/compare/index.js"></script>
 <script type="module" src="/static/js/theme.js"></script>
 <script type="module" src="/static/js/censor.js"></script>
+<script type="module" src="/static/js/fitnesscoach.js"></script>
 <script type="module" src="/static/js/settings.js"></script>
 <script type="module" src="/static/js/admin.js"></script>
 <script type="module" src="/static/js/assistant.js"></script>
