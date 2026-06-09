@@ -30,12 +30,18 @@ def setup_fitnesscoach_routes(session_manager) -> APIRouter:
 
             if not coach_session:
                 # Create it
-                from src.llm_core import llm_call_async
-                # Just create a fresh session via session_manager
-                new_session_id = session_manager.create_session()
-                sess = session_manager.get_session(new_session_id)
-                sess.name = "[Fitness Coach]"
-                sess.owner = owner
+                import uuid
+                from src.endpoint_resolver import resolve_endpoint
+                endpoint_url, model, _ = resolve_endpoint("default", owner=owner)
+                
+                new_session_id = str(uuid.uuid4())
+                sess = session_manager.create_session(
+                    session_id=new_session_id,
+                    name="[Fitness Coach]",
+                    endpoint_url=endpoint_url or "",
+                    model=model or "",
+                    owner=owner
+                )
                 
                 # Update DB
                 db_sess = db.query(DBSession).filter(DBSession.id == new_session_id).first()
