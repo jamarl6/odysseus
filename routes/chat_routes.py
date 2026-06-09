@@ -404,6 +404,14 @@ def setup_chat_routes(
         # Workspace: confine the agent's file/shell tools to this folder. Validate
         # it's a real directory; ignore (no confinement) otherwise.
         is_fitnesscoach = str(form_data.get("is_fitnesscoach", "")).lower() == "true"
+        if not is_fitnesscoach and session:
+            _sess_db = SessionLocal()
+            try:
+                _db_s = _sess_db.query(DbSession).filter(DbSession.id == session).first()
+                if _db_s and _db_s.folder == "Fitness Coach":
+                    is_fitnesscoach = True
+            finally:
+                _sess_db.close()
         if is_fitnesscoach:
             from src.config import config
             _u = get_current_user(request) or "default"

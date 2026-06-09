@@ -697,8 +697,7 @@ logger.info("Webhook & API token routes initialized")
 from routes.note_routes import setup_note_routes
 app.include_router(setup_note_routes(task_scheduler))
 
-from routes.fitnesscoach_routes import setup_fitnesscoach_routes
-app.include_router(setup_fitnesscoach_routes(session_manager))
+
 
 # Email
 from routes.email_routes import setup_email_routes
