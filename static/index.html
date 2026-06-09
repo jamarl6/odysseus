@@ -912,7 +912,7 @@
                 const res = await fetch('/api/session', { method: 'POST', body: fd });
                 if (res.ok) {
                    const data = await res.json();
-                   if (window.chatModule && window.chatModule.loadSession) {
+                   if (window.sessionModule) {
                        // Force UI to switch to chat layout
                        const wp = document.getElementById('workspace-panel');
                        const cp = document.getElementById('chat-panel');
@@ -924,7 +924,8 @@
                            if (sb) sb.classList.add('hidden');
                            if (bd) bd.classList.remove('visible');
                        }
-                       window.chatModule.loadSession(data.id);
+                       await window.sessionModule.loadSessions();
+                       window.sessionModule.selectSession(data.id);
                    }
                 }
              } catch(e) { console.error('Failed to create fitness coach session', e); }
