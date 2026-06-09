@@ -1809,6 +1809,9 @@ export async function selectSession(id, { keepSidebar = false } = {}) {
     // Stop pulsing notification — user is now viewing this session
     clearStreamComplete(id);
 
+    // Update Fitness Dashboard
+    updateFitnessDashboard(meta);
+
     // Re-attach any background stream
     try {
       if (window.chatModule && window.chatModule.checkBackgroundStream) {
