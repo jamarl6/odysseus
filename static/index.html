@@ -908,6 +908,23 @@
              const fd = new FormData();
              fd.append('name', '[Fitness Coach]');
              fd.append('folder', 'Fitness Coach');
+             
+             // Get current or default model config
+             let epUrl = '', model = '';
+             if (window.sessionModule) {
+                 const current = window.sessionModule.getSessions().find(s => s.id === window.sessionModule.getCurrentSessionId());
+                 if (current && current.endpoint_url && current.model) {
+                     epUrl = current.endpoint_url;
+                     model = current.model;
+                 } else if (window.__odysseusDefaultChat) {
+                     epUrl = window.__odysseusDefaultChat.endpoint_url;
+                     model = window.__odysseusDefaultChat.model;
+                 }
+             }
+             if (epUrl) fd.append('endpoint_url', epUrl);
+             if (model) fd.append('model', model);
+             fd.append('skip_validation', 'true');
+
              try {
                 const res = await fetch('/api/session', { method: 'POST', body: fd });
                 if (res.ok) {

@@ -352,6 +352,7 @@ def setup_session_routes(session_manager: SessionManager, config: dict, webhook_
             finally:
                 _db.close()
 
+        user = effective_user(request)
         if not endpoint_url and not skip_val:
             if folder == "Fitness Coach":
                 from src.endpoint_resolver import resolve_endpoint
@@ -409,7 +410,6 @@ def setup_session_routes(session_manager: SessionManager, config: dict, webhook_
                 model_to_use = found
         
         sid = str(uuid.uuid4())
-        user = effective_user(request)
         session = session_manager.create_session(
             session_id=sid,
             name=name or "",
