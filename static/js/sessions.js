@@ -3262,10 +3262,11 @@ async function updateFitnessDashboard(meta) {
         calcBtn.setAttribute('data-bound', 'true');
         calcBtn.addEventListener('click', () => {
           const input = document.getElementById('chat-input');
-          const sendBtn = document.getElementById('send-btn');
-          if (input && sendBtn) {
+          const chatForm = document.getElementById('chat-form');
+          if (input && chatForm) {
             input.value = "Bitte lies meine neusten Vitalwerte aus dem Log und meine temporären Notizen, berechne meinen heutigen Condition-Score (0-100) und schreibe den neuen Score in den condition-Block von fitness_metrics.json.";
-            sendBtn.click();
+            // Triggere das Submit-Event auf dem Formular
+            chatForm.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
           }
         });
       }

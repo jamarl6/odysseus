@@ -983,22 +983,20 @@
           <div class="fitness-circle-sub" id="fitness-movement-text">Waiting...</div>
         </div>
 
-      </div>
-      
-      <!-- Action buttons for Fitness Dashboard -->
-      <div style="padding: 10px 15px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 10px;">
-        <!-- Temporary Notes Input -->
-        <div style="display: flex; gap: 8px;">
-          <input type="text" id="fitness-note-input" class="chat-input-textarea" style="flex: 1; padding: 8px 12px; height: 36px; border-radius: 8px; font-size: 13px;" placeholder="Notiz (z.B. gestern feiern, harter Umzug)...">
-          <button type="button" id="fitness-note-btn" class="chat-send-btn" style="width: auto; padding: 0 12px; height: 36px; border-radius: 8px; font-size: 13px;">Hinzufügen</button>
+        <!-- Action buttons for Fitness Dashboard -->
+        <div style="padding: 10px 15px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 10px; width: 100%; box-sizing: border-box;">
+          <!-- Temporary Notes Input -->
+          <div style="display: flex; gap: 8px; width: 100%;">
+            <input type="text" id="fitness-note-input" class="chat-input-textarea" style="flex: 1; padding: 8px 12px; height: 36px; border-radius: 8px; font-size: 13px; min-width: 0;" placeholder="Notiz (z.B. gestern feiern, harter Umzug)...">
+            <button type="button" id="fitness-note-btn" class="chat-send-btn" style="width: auto; padding: 0 12px; height: 36px; border-radius: 8px; font-size: 13px; white-space: nowrap;">Hinzufügen</button>
+          </div>
+          <!-- Recalculate Condition Button -->
+          <button type="button" id="fitness-calc-btn" style="width: 100%; padding: 8px; border-radius: 8px; background: var(--bg-tertiary); border: 1px solid var(--border); color: var(--fg); font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+            Condition-Score neu berechnen
+          </button>
         </div>
-        <!-- Recalculate Condition Button -->
-        <button type="button" id="fitness-calc-btn" style="width: 100%; padding: 8px; border-radius: 8px; background: var(--bg-tertiary); border: 1px solid var(--border); color: var(--fg); font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-          Condition-Score neu berechnen
-        </button>
       </div>
-
     </div>
     <div id="welcome-screen">
       <div class="welcome-name"><svg class="welcome-boat" viewBox="0 0 32 32"><path d="M16 4L16 22L6 22Z" fill="currentColor"/><path d="M16 8L16 22L24 22Z" fill="currentColor" opacity="0.6"/><path d="M4 24Q10 20 16 24Q22 28 28 24" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>Odysseus</div>
