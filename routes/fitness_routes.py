@@ -49,14 +49,15 @@ async def get_dashboard(request: Request):
     except Exception as e:
         return JSONResponse(content=get_default_metrics())
 
-class MetricsPayload(BaseModel):
-    recovery: dict = None
-    condition: dict = None
-    movement: dict = None
-
 @router.post("/api/fitness_coach/dashboard")
-async def update_dashboard(request: Request, payload: MetricsPayload):
+async def update_dashboard(request: Request):
+    try:
+        payload = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON")
+        
     path = get_fitness_metrics_path(request)
+    workspace = os.path.dirname(path)
     
     # Load existing or default
     if os.path.exists(path):
@@ -68,17 +69,28 @@ async def update_dashboard(request: Request, payload: MetricsPayload):
     else:
         data = get_default_metrics()
 
-    # Update fields
-    if payload.recovery is not None:
-        data["recovery"].update(payload.recovery)
-    if payload.condition is not None:
-        data["condition"].update(payload.condition)
-    if payload.movement is not None:
-        data["movement"].update(payload.movement)
+    # Update fields dynamically
+    for key, val in payload.items():
+        if isinstance(val, dict) and key in data and isinstance(data[key], dict):
+            data[key].update(val)
+        else:
+            data[key] = val
 
     try:
         with open(path, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2)
+            
+        # Append all new values to messwerte_log.md for history so the AI can read them
+        from datetime import datetime
+        log_path = os.path.join(workspace, "messwerte_log.md")
+        now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        
+        # We only log if there is any data
+        if payload:
+            log_entry = f"\n### Messwerte vom {now_str}\n```json\n{json.dumps(payload, indent=2)}\n```\n"
+            with open(log_path, "a", encoding="utf-8") as f:
+                f.write(log_entry)
+                
         return JSONResponse(content={"status": "success", "data": data})
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
