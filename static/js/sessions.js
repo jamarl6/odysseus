@@ -3262,11 +3262,10 @@ async function updateFitnessDashboard(meta) {
         calcBtn.setAttribute('data-bound', 'true');
         calcBtn.addEventListener('click', () => {
           const input = document.getElementById('chat-input');
-          const chatForm = document.getElementById('chat-form');
-          if (input && chatForm) {
+          const sendBtn = document.querySelector('.send-btn');
+          if (input && sendBtn) {
             input.value = "Bitte lies meine neusten Vitalwerte aus dem Log und meine temporären Notizen, berechne meinen heutigen Condition-Score (0-100) und schreibe den neuen Score in den condition-Block von fitness_metrics.json.";
-            // Triggere das Submit-Event auf dem Formular
-            chatForm.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+            sendBtn.click();
           }
         });
       }
@@ -3275,25 +3274,21 @@ async function updateFitnessDashboard(meta) {
       if (noteBtn && !noteBtn.hasAttribute('data-bound')) {
         noteBtn.setAttribute('data-bound', 'true');
         noteBtn.addEventListener('click', async () => {
-          const noteInput = document.getElementById('fitness-note-input');
-          const noteText = noteInput.value.trim();
-          if (!noteText) return;
+          const noteText = prompt("Temporäre Notiz (z.B. gestern feiern, harter Umzug):");
+          if (!noteText || !noteText.trim()) return;
           noteBtn.disabled = true;
           try {
             const r = await fetch(`${typeof API_BASE !== 'undefined' ? API_BASE : ''}/api/fitness_coach/note`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ note: noteText })
+              body: JSON.stringify({ note: noteText.trim() })
             });
-            if (r.ok) {
-              noteInput.value = '';
-              noteInput.placeholder = 'Notiz gespeichert!';
-              setTimeout(() => noteInput.placeholder = 'Notiz (z.B. gestern feiern, harter Umzug)...', 2000);
-            } else {
-              noteInput.placeholder = 'Fehler beim Speichern!';
+            if (!r.ok) {
+              alert('Fehler beim Speichern der Notiz!');
             }
           } catch(e) {
             console.error('Note add error', e);
+            alert('Fehler beim Speichern der Notiz!');
           }
           noteBtn.disabled = false;
         });
