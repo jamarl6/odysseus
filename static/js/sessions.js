@@ -3257,6 +3257,47 @@ async function updateFitnessDashboard(meta) {
       setCircle('condition', data.condition?.score, 100, data.condition?.text);
       setCircle('movement', data.movement?.current, data.movement?.goal || 1000, data.movement?.text);
 
+      const calcBtn = document.getElementById('fitness-calc-btn');
+      if (calcBtn && !calcBtn.hasAttribute('data-bound')) {
+        calcBtn.setAttribute('data-bound', 'true');
+        calcBtn.addEventListener('click', () => {
+          const input = document.getElementById('chat-input');
+          const sendBtn = document.getElementById('send-btn');
+          if (input && sendBtn) {
+            input.value = "Bitte lies meine neusten Vitalwerte aus dem Log und meine temporären Notizen, berechne meinen heutigen Condition-Score (0-100) und schreibe den neuen Score in den condition-Block von fitness_metrics.json.";
+            sendBtn.click();
+          }
+        });
+      }
+      
+      const noteBtn = document.getElementById('fitness-note-btn');
+      if (noteBtn && !noteBtn.hasAttribute('data-bound')) {
+        noteBtn.setAttribute('data-bound', 'true');
+        noteBtn.addEventListener('click', async () => {
+          const noteInput = document.getElementById('fitness-note-input');
+          const noteText = noteInput.value.trim();
+          if (!noteText) return;
+          noteBtn.disabled = true;
+          try {
+            const r = await fetch(`${typeof API_BASE !== 'undefined' ? API_BASE : ''}/api/fitness_coach/note`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ note: noteText })
+            });
+            if (r.ok) {
+              noteInput.value = '';
+              noteInput.placeholder = 'Notiz gespeichert!';
+              setTimeout(() => noteInput.placeholder = 'Notiz (z.B. gestern feiern, harter Umzug)...', 2000);
+            } else {
+              noteInput.placeholder = 'Fehler beim Speichern!';
+            }
+          } catch(e) {
+            console.error('Note add error', e);
+          }
+          noteBtn.disabled = false;
+        });
+      }
+
     } catch (e) {
       console.error('Failed to fetch fitness dashboard data', e);
     }

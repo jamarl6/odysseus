@@ -94,3 +94,22 @@ async def update_dashboard(request: Request):
         return JSONResponse(content={"status": "success", "data": data})
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+class NotePayload(BaseModel):
+    note: str
+
+@router.post("/api/fitness_coach/note")
+async def add_temporary_note(request: Request, payload: NotePayload):
+    path = get_fitness_metrics_path(request)
+    workspace = os.path.dirname(path)
+    notes_path = os.path.join(workspace, "temporaere_notizen.md")
+    
+    from datetime import datetime
+    now_str = datetime.now().strftime("%Y-%m-%d")
+    
+    try:
+        with open(notes_path, "a", encoding="utf-8") as f:
+            f.write(f"- {now_str}: {payload.note}\n")
+        return JSONResponse(content={"status": "success"})
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
