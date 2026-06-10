@@ -3,12 +3,12 @@ import json
 from fastapi import APIRouter, Request, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from src.auth_helpers import get_current_user
+from src.auth_helpers import effective_user
 
 router = APIRouter()
 
 def get_fitness_metrics_path(request: Request) -> str:
-    user = get_current_user(request) or "default"
+    user = effective_user(request) or "default"
     # Same base path logic as chat_routes.py
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     workspace = os.path.join(base_dir, "data", "users", user, "fitness_data")
