@@ -3258,8 +3258,8 @@ async function updateFitnessDashboard(meta) {
       setCircle('movement', data.movement?.current, data.movement?.goal || 1000, data.movement?.text);
 
       const conditionCard = document.getElementById('fitness-condition-card');
-      if (conditionCard && data.condition?.text) {
-        conditionCard.setAttribute('data-tooltip', data.condition.text);
+      if (conditionCard && data.condition?.tooltip) {
+        conditionCard.setAttribute('data-tooltip', data.condition.tooltip);
       } else if (conditionCard) {
         conditionCard.removeAttribute('data-tooltip');
       }
@@ -3273,7 +3273,7 @@ async function updateFitnessDashboard(meta) {
           calcBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="anim-spin"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 10 10"/></svg>';
           calcBtn.disabled = true;
 
-          const prompt = "Bitte lies meine neusten Vitalwerte aus dem Log und meine temporären Notizen, berechne meinen heutigen Condition-Score (0-100) und schreibe den neuen Score in den condition-Block von fitness_metrics.json. Schreibe ZUSÄTZLICH eine ganz kurze Erklärung (max 1-2 Sätze) in das Feld 'text' innerhalb des condition-Blocks, warum du diesen Wert gewählt hast.";
+          const prompt = "Bitte lies meine neusten Vitalwerte aus dem Log und meine temporären Notizen, berechne meinen heutigen Condition-Score (0-100) und schreibe den neuen Score in den condition-Block von fitness_metrics.json. Schreibe in das Feld 'text' des condition-Blocks ein kurzes Label (max 2 Wörter, z.B. 'Gut', 'Eingeschränkt'). Schreibe ZUSÄTZLICH eine kurze Erklärung (max 1-2 Sätze inkl. kleinem Tipp) in das Feld 'tooltip' innerhalb des condition-Blocks, warum du diesen Wert gewählt hast.";
           
           const fd = new FormData();
           fd.append('message', prompt);
@@ -3284,6 +3284,7 @@ async function updateFitnessDashboard(meta) {
           }
           fd.append('incognito', 'true');
           fd.append('mode', 'agent');
+          fd.append('is_subchat', 'true'); // Hides the stream from the main chat UI
           
           try {
             const res = await fetch(`${typeof API_BASE !== 'undefined' ? API_BASE : ''}/api/chat_stream`, {
