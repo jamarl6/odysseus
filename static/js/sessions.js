@@ -3257,18 +3257,53 @@ async function updateFitnessDashboard(meta) {
       setCircle('condition', data.condition?.score, 100, data.condition?.text);
       setCircle('movement', data.movement?.current, data.movement?.goal || 1000, data.movement?.text);
 
+      const conditionCard = document.getElementById('fitness-condition-card');
+      if (conditionCard && data.condition?.text) {
+        conditionCard.setAttribute('data-tooltip', data.condition.text);
+      } else if (conditionCard) {
+        conditionCard.removeAttribute('data-tooltip');
+      }
+
       const calcBtn = document.getElementById('fitness-calc-btn');
       if (calcBtn && !calcBtn.hasAttribute('data-bound')) {
         calcBtn.setAttribute('data-bound', 'true');
-        calcBtn.addEventListener('click', () => {
-          const input = document.getElementById('message');
-          const sendBtn = document.querySelector('.send-btn');
-          if (input && sendBtn) {
-            input.value = "Bitte lies meine neusten Vitalwerte aus dem Log und meine temporären Notizen, berechne meinen heutigen Condition-Score (0-100) und schreibe den neuen Score in den condition-Block von fitness_metrics.json.";
-            // Triggere das input-Event falls nötig für interne States
-            input.dispatchEvent(new Event('input', { bubbles: true }));
-            sendBtn.click();
+        calcBtn.addEventListener('click', async () => {
+          // Zeige Lade-Indikator
+          const originalIcon = calcBtn.innerHTML;
+          calcBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="anim-spin"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 10 10"/></svg>';
+          calcBtn.disabled = true;
+
+          const prompt = "Bitte lies meine neusten Vitalwerte aus dem Log und meine temporären Notizen, berechne meinen heutigen Condition-Score (0-100) und schreibe den neuen Score in den condition-Block von fitness_metrics.json. Schreibe ZUSÄTZLICH eine ganz kurze Erklärung (max 1-2 Sätze) in das Feld 'text' innerhalb des condition-Blocks, warum du diesen Wert gewählt hast.";
+          
+          const fd = new FormData();
+          fd.append('message', prompt);
+          // Hole die aktuelle Session ID aus dem DOM
+          const sessionId = document.querySelector('.session-item.active')?.dataset.id || currentSessionId;
+          if (sessionId) {
+              fd.append('session', sessionId);
           }
+          fd.append('incognito', 'true');
+          fd.append('mode', 'agent');
+          
+          try {
+            const res = await fetch(`${typeof API_BASE !== 'undefined' ? API_BASE : ''}/api/chat/stream`, {
+              method: 'POST',
+              body: fd
+            });
+            // Da es ein Stream ist, lesen wir ihn bis zum Ende, auch wenn wir die Antwort ignorieren.
+            if (res.body) {
+                const reader = res.body.getReader();
+                while(true) {
+                    const {done} = await reader.read();
+                    if (done) break;
+                }
+            }
+          } catch(e) {
+            console.error("Fehler beim Background Chat:", e);
+          }
+          
+          calcBtn.innerHTML = originalIcon;
+          calcBtn.disabled = false;
         });
       }
       
