@@ -566,10 +566,9 @@ def setup_chat_routes(
             compare_mode=compare_mode,
             webhook_manager=webhook_manager,
             use_enhanced_message=True,
-            # Skills index only ships when the model can actually call
             # manage_skills (agent mode). In plain chat or incognito the
             # index would be useless / unwanted noise.
-            agent_mode=(chat_mode == "agent"),
+            agent_mode=(chat_mode == "agent" or is_fitnesscoach),
         )
 
         if is_fitnesscoach:

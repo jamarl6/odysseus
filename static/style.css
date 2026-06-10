@@ -36145,11 +36145,12 @@ body.theme-frosted .modal {
 /* Fitness Coach Dashboard */
 .fitness-dashboard {
   position: absolute;
-  top: 50px;
-  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  right: 40px; /* Move away from scrollbar */
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
+  justify-content: center;
   align-items: center;
   gap: 16px;
   padding: 16px 12px;
