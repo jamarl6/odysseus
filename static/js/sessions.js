@@ -3286,7 +3286,7 @@ async function updateFitnessDashboard(meta) {
           fd.append('mode', 'agent');
           
           try {
-            const res = await fetch(`${typeof API_BASE !== 'undefined' ? API_BASE : ''}/api/chat/stream`, {
+            const res = await fetch(`${typeof API_BASE !== 'undefined' ? API_BASE : ''}/api/chat_stream`, {
               method: 'POST',
               body: fd
             });
