@@ -80,16 +80,43 @@ async def update_dashboard(request: Request):
         with open(path, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2)
             
-        # Append all new values to messwerte_log.md for history so the AI can read them
-        from datetime import datetime
-        log_path = os.path.join(workspace, "messwerte_log.md")
-        now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        
-        # We only log if there is any data
+        # Update history JSON and regenerate messwerte_log.md
         if payload:
-            log_entry = f"\n### Messwerte vom {now_str}\n```json\n{json.dumps(payload, indent=2)}\n```\n"
-            with open(log_path, "a", encoding="utf-8") as f:
-                f.write(log_entry)
+            from datetime import datetime
+            now_date = datetime.now().strftime("%Y-%m-%d")
+            history_path = os.path.join(workspace, "fitness_history.json")
+            
+            history = {}
+            if os.path.exists(history_path):
+                try:
+                    with open(history_path, "r", encoding="utf-8") as f:
+                        history = json.load(f)
+                except Exception:
+                    history = {}
+                    
+            if now_date not in history:
+                history[now_date] = {}
+                
+            # Merge payload into today's history entry
+            for k, v in payload.items():
+                if isinstance(v, dict) and k in history[now_date] and isinstance(history[now_date][k], dict):
+                    history[now_date][k].update(v)
+                else:
+                    history[now_date][k] = v
+                    
+            with open(history_path, "w", encoding="utf-8") as f:
+                json.dump(history, f, indent=2)
+                
+            # Regenerate messwerte_log.md from the last 14 days of history
+            log_path = os.path.join(workspace, "messwerte_log.md")
+            sorted_dates = sorted(history.keys())[-14:]
+            
+            log_content = "# Fitness Historie (Letzte 14 Tage)\n\n"
+            for date_key in sorted_dates:
+                log_content += f"### Messwerte vom {date_key}\n```json\n{json.dumps(history[date_key], indent=2)}\n```\n\n"
+                
+            with open(log_path, "w", encoding="utf-8") as f:
+                f.write(log_content)
                 
         return JSONResponse(content={"status": "success", "data": data})
     except Exception as e:
