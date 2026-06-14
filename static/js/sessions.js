@@ -749,6 +749,103 @@ export function renderSessionList() {
   _renderRAF = requestAnimationFrame(_renderSessionListImpl);
 }
 
+function _renderFitnessCoachSessions(fcSessions) {
+  const container = document.getElementById('tool-fitnesscoach-children');
+  if (!container) return;
+  
+  // Sort newest first
+  fcSessions.sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
+  
+  const frag = document.createDocumentFragment();
+  fcSessions.forEach(s => frag.appendChild(createSessionItem(s)));
+  
+  container.innerHTML = '';
+  container.appendChild(frag);
+}
+
+// Ensure the folder toggle logic exists
+function initFitnessCoachFolder() {
+  const folder = document.getElementById('tool-fitnesscoach-folder');
+  const toggle = document.getElementById('tool-fitnesscoach-toggle');
+  const newBtn = document.getElementById('tool-fitnesscoach-new-btn');
+  if (!folder || !toggle || !newBtn) return;
+  
+  // Make folder clickable to expand/collapse
+  folder.addEventListener('click', (e) => {
+    // If clicking the new session button, don't collapse
+    if (e.target.closest('.action-new-session')) return;
+    folder.classList.toggle('open');
+    const isOpen = folder.classList.contains('open');
+    toggle.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(-90deg)';
+    const children = document.getElementById('tool-fitnesscoach-children');
+    if (children) children.style.display = isOpen ? 'block' : 'none';
+  });
+
+  // Handle + button click to create new fitness coach session
+  newBtn.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    
+    // Find the best endpoint_url to use
+    let epUrl = '', model = '';
+    const current = sessions.find(s => s.id === currentSessionId);
+    if (current && current.endpoint_url && current.model) {
+      epUrl = current.endpoint_url;
+      model = current.model;
+    } else {
+      // Look for any existing session to borrow its endpoint/model
+      const anySession = sessions.find(s => s.endpoint_url && s.model && !s.archived && s.folder !== 'Fitness Coach');
+      if (anySession) {
+        epUrl = anySession.endpoint_url;
+        model = anySession.model;
+      }
+    }
+    
+    const fd = new FormData();
+    fd.append('name', '[Fitness Coach]');
+    fd.append('folder', 'Fitness Coach');
+    if (epUrl) fd.append('endpoint_url', epUrl);
+    if (model) fd.append('model', model);
+    fd.append('skip_validation', 'true');
+
+    try {
+      const res = await fetch('/api/session', { method: 'POST', body: fd });
+      if (res.ok) {
+        const data = await res.json();
+        // Force UI to switch to chat layout
+        const wp = document.getElementById('workspace-panel');
+        const cp = document.getElementById('chat-panel');
+        if (wp) wp.style.display = 'none';
+        if (cp) cp.style.display = 'flex';
+        if (window.innerWidth <= 768) {
+          const sb = document.getElementById('sidebar');
+          const bd = document.getElementById('sidebar-backdrop');
+          if (sb) sb.classList.add('hidden');
+          if (bd) bd.classList.remove('visible');
+        }
+        await loadSessions();
+        selectSession(data.id);
+        
+        // Open folder to show the new session
+        folder.classList.add('open');
+        toggle.textContent = '\u25BC';
+        const children = document.getElementById('tool-fitnesscoach-children');
+        if (children) children.style.display = 'block';
+      } else {
+        const text = await res.text();
+        console.error('Failed to create fitness coach session', text);
+      }
+    } catch(err) {
+      console.error('Failed to create fitness coach session', err);
+    }
+  });
+}
+// Call it once
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initFitnessCoachFolder);
+} else {
+  initFitnessCoachFolder();
+}
+
 function _renderSessionListImpl() {
   _renderRAF = null;
   const list = uiModule.el('session-list');
@@ -756,7 +853,9 @@ function _renderSessionListImpl() {
 
   // Get saved order from localStorage
   const savedOrder = Storage.get('session-order');
-  let orderedSessions = sessions.filter(s => !s.archived && s.folder !== 'Assistant' && !_isIncognitoSession(s.id) && (s.name || '').trim() !== 'Nobody' && (s.name || '').trim() !== 'Incognito');
+  // Separate Fitness Coach sessions from the main list
+  const fcSessions = sessions.filter(s => s.folder === 'Fitness Coach' && !s.archived);
+  let orderedSessions = sessions.filter(s => !s.archived && s.folder !== 'Assistant' && s.folder !== 'Fitness Coach' && !_isIncognitoSession(s.id) && (s.name || '').trim() !== 'Nobody' && (s.name || '').trim() !== 'Incognito');
 
   if (savedOrder) {
     try {
@@ -828,6 +927,7 @@ function _renderSessionListImpl() {
     list.innerHTML = '';
     list.appendChild(_frag);
     _postRenderSessionList(list);
+    _renderFitnessCoachSessions(fcSessions);
     return;
   }
 
@@ -1089,6 +1189,7 @@ function _renderSessionListImpl() {
   list.appendChild(_frag);
 
   _postRenderSessionList(list);
+  _renderFitnessCoachSessions(fcSessions);
 }
 
 /** Shared post-render: highlight, keyboard nav, swipe hint, drag sort */
@@ -1707,6 +1808,9 @@ export async function selectSession(id, { keepSidebar = false } = {}) {
 
     // Stop pulsing notification — user is now viewing this session
     clearStreamComplete(id);
+
+    // Update Fitness Dashboard
+    updateFitnessDashboard(meta);
 
     // Re-attach any background stream
     try {
@@ -3112,4 +3216,127 @@ const sessionModule = {
 
 export { updateModelPicker };
 
+async function updateFitnessDashboard(meta) {
+  const dash = document.getElementById('fitness-dashboard');
+  if (!dash) return;
+  if (meta && meta.folder === 'Fitness Coach') {
+    dash.style.display = 'flex';
+    try {
+      const res = await fetch(`${typeof API_BASE !== 'undefined' ? API_BASE : ''}/api/fitness_coach/dashboard`);
+      const data = await res.json();
+      
+      const setCircle = (prefix, val, goal, text) => {
+        let percent = 0;
+        let isNumber = false;
+        if (typeof val === 'number') {
+           isNumber = true;
+           if (goal > 0) percent = Math.min(100, (val / goal) * 100);
+           else percent = Math.min(100, val);
+        }
+        
+        const path = document.getElementById(`fitness-${prefix}-path`);
+        const scoreText = document.getElementById(`fitness-${prefix}-score`);
+        const subText = document.getElementById(`fitness-${prefix}-text`);
+        
+        if (path) {
+          path.style.strokeDasharray = `${percent}, 100`;
+          const hue = Math.floor((percent / 100) * 120);
+          path.style.stroke = isNumber ? `hsl(${hue}, 80%, 50%)` : 'color-mix(in srgb, var(--fg) 20%, transparent)';
+        }
+        
+        if (scoreText) {
+          if (!isNumber) scoreText.textContent = '--';
+          else if (goal > 0) scoreText.textContent = `${val}`;
+          else scoreText.textContent = `${Math.round(percent)}%`;
+        }
+        
+        if (subText) subText.textContent = text || 'Waiting...';
+      };
+
+      setCircle('recovery', data.recovery?.score, 100, data.recovery?.text);
+      setCircle('condition', data.condition?.score, 100, data.condition?.text);
+      setCircle('movement', data.movement?.current, data.movement?.goal || 1000, data.movement?.text);
+
+      const conditionCard = document.getElementById('fitness-condition-card');
+      if (conditionCard && data.condition?.tooltip) {
+        conditionCard.setAttribute('data-tooltip', data.condition.tooltip);
+      } else if (conditionCard) {
+        conditionCard.removeAttribute('data-tooltip');
+      }
+
+      const calcBtn = document.getElementById('fitness-calc-btn');
+      if (calcBtn && !calcBtn.hasAttribute('data-bound')) {
+        calcBtn.setAttribute('data-bound', 'true');
+        calcBtn.addEventListener('click', async () => {
+          // Zeige Lade-Indikator
+          const originalIcon = calcBtn.innerHTML;
+          calcBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="anim-spin"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 10 10"/></svg>';
+          calcBtn.disabled = true;
+
+          const prompt = "Bitte lies meine neusten Vitalwerte aus dem Log und meine temporären Notizen, berechne meinen heutigen Condition-Score (0-100) und schreibe den neuen Score in den condition-Block von fitness_metrics.json. Schreibe in das Feld 'text' des condition-Blocks ein kurzes Label (max 2 Wörter, z.B. 'Gut', 'Eingeschränkt'). Schreibe ZUSÄTZLICH eine kurze Erklärung (max 1-2 Sätze inkl. kleinem Tipp) in das Feld 'tooltip' innerhalb des condition-Blocks, warum du diesen Wert gewählt hast. (WICHTIG: Denke in deinen internen <thought> Tags extrem kurz und in Stichpunkten, um Token zu sparen. Du musst keine Romane schreiben, komme schnell zum Ergebnis.)";
+          
+          const fd = new FormData();
+          fd.append('message', prompt);
+          // Hole die aktuelle Session ID aus dem DOM
+          const sessionId = document.querySelector('.session-item.active')?.dataset.id || currentSessionId;
+          if (sessionId) {
+              fd.append('session', sessionId);
+          }
+          fd.append('incognito', 'true');
+          fd.append('mode', 'agent');
+          fd.append('is_subchat', 'true'); // Hides the stream from the main chat UI
+          
+          try {
+            const res = await fetch(`${typeof API_BASE !== 'undefined' ? API_BASE : ''}/api/chat_stream`, {
+              method: 'POST',
+              body: fd
+            });
+            // Da es ein Stream ist, lesen wir ihn bis zum Ende, auch wenn wir die Antwort ignorieren.
+            if (res.body) {
+                const reader = res.body.getReader();
+                while(true) {
+                    const {done} = await reader.read();
+                    if (done) break;
+                }
+            }
+          } catch(e) {
+            console.error("Fehler beim Background Chat:", e);
+          }
+          
+          calcBtn.innerHTML = originalIcon;
+          calcBtn.disabled = false;
+        });
+      }
+      
+      const noteBtn = document.getElementById('fitness-note-btn');
+      if (noteBtn && !noteBtn.hasAttribute('data-bound')) {
+        noteBtn.setAttribute('data-bound', 'true');
+        noteBtn.addEventListener('click', async () => {
+          const noteText = prompt("Temporäre Notiz (z.B. gestern feiern, harter Umzug):");
+          if (!noteText || !noteText.trim()) return;
+          noteBtn.disabled = true;
+          try {
+            const r = await fetch(`${typeof API_BASE !== 'undefined' ? API_BASE : ''}/api/fitness_coach/note`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ note: noteText.trim() })
+            });
+            if (!r.ok) {
+              alert('Fehler beim Speichern der Notiz!');
+            }
+          } catch(e) {
+            console.error('Note add error', e);
+            alert('Fehler beim Speichern der Notiz!');
+          }
+          noteBtn.disabled = false;
+        });
+      }
+
+    } catch (e) {
+      console.error('Failed to fetch fitness dashboard data', e);
+    }
+  } else {
+    dash.style.display = 'none';
+  }
+}
 export default sessionModule;

@@ -403,10 +403,25 @@ def setup_chat_routes(
         chat_mode = str(form_data.get("mode", "")).lower()  # 'chat' or 'agent'
         # Workspace: confine the agent's file/shell tools to this folder. Validate
         # it's a real directory; ignore (no confinement) otherwise.
-        workspace = (form_data.get("workspace") or "").strip()
-        if workspace:
-            _ws_real = os.path.realpath(os.path.expanduser(workspace))
-            workspace = _ws_real if os.path.isdir(_ws_real) else ""
+        is_fitnesscoach = str(form_data.get("is_fitnesscoach", "")).lower() == "true"
+        if not is_fitnesscoach and session:
+            _sess_db = SessionLocal()
+            try:
+                _db_s = _sess_db.query(DBSession).filter(DBSession.id == session).first()
+                if _db_s and _db_s.folder == "Fitness Coach":
+                    is_fitnesscoach = True
+            finally:
+                _sess_db.close()
+        if is_fitnesscoach:
+            _u = get_current_user(request) or "default"
+            workspace = os.path.abspath(os.path.join("data", "users", _u, "fitness_data"))
+            os.makedirs(workspace, exist_ok=True)
+            chat_mode = "agent"
+        else:
+            workspace = (form_data.get("workspace") or "").strip()
+            if workspace:
+                _ws_real = os.path.realpath(os.path.expanduser(workspace))
+                workspace = _ws_real if os.path.isdir(_ws_real) else ""
         # Did the USER explicitly pick agent mode? (vs. us auto-escalating
         # below). Skill extraction should only learn from real agent sessions,
         # not chats we quietly promoted for a notes/calendar intent.
@@ -551,11 +566,18 @@ def setup_chat_routes(
             compare_mode=compare_mode,
             webhook_manager=webhook_manager,
             use_enhanced_message=True,
-            # Skills index only ships when the model can actually call
             # manage_skills (agent mode). In plain chat or incognito the
             # index would be useless / unwanted noise.
-            agent_mode=(chat_mode == "agent"),
+            agent_mode=(chat_mode == "agent" or is_fitnesscoach),
         )
+
+        if is_fitnesscoach:
+            coach_prompt = """You are a world-class Fitness Coach. You have file I/O tools to read, write, and append to the user's local fitness data directory (such as ziele.md, trainingsplan.md, messwerte_log.md).
+For dashboard metrics (sleep, condition, movement goals), you MUST read and write the structured JSON file 'fitness_metrics.json'. Treat this JSON file as the Single Source of Truth for numerical health data to display on the frontend dashboard. Update it proactively and accurately.
+For temporary user context (e.g., injuries, bad sleep, partying), use the file 'temporaere_notizen.md'. ALWAYS write entries with the current absolute date (e.g., '2026-06-10: War gestern feiern') so you know when it happened. When reading this file, automatically ignore or delete entries that are no longer relevant (e.g., an alcohol hangover from 5 days ago).
+When analyzing the user's physical state or calculating the Condition Score, strongly consider recent intense work days or long training sessions, not just vitals. Also, ALWAYS read the current 'fitness_metrics.json' to know the user's current Condition Score and strongly consider it in your general advice.
+Answer in German by default as the user prefers German."""
+            ctx.messages.insert(0, {"role": "system", "content": coach_prompt})
 
         _research_flags = {"do": do_research}  # Mutable container for generator scope
 

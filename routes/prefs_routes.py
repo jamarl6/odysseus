@@ -28,22 +28,64 @@ def _save(prefs):
     os.replace(tmp, PREFS_FILE)
 
 
+def _migrate_legacy_prefs(all_prefs: dict) -> dict:
+    """Migrate legacy flat preferences into the new _users format."""
+    if not all_prefs or "_users" in all_prefs:
+        return all_prefs
+
+    new_prefs = {"_users": {}}
+    try:
+        auth_file = os.path.join("data", "auth.json")
+        if os.path.exists(auth_file):
+            with open(auth_file, "r", encoding="utf-8") as f:
+                auth_data = json.load(f)
+                
+            first_user = None
+            for u, data in auth_data.items():
+                if data.get("is_admin"):
+                    first_user = u
+                    break
+            if not first_user and auth_data:
+                first_user = next(iter(auth_data))
+                
+            if first_user:
+                new_prefs["_users"][first_user] = dict(all_prefs)
+                return new_prefs
+    except Exception:
+        pass
+        
+    # Fallback if no auth.json or it fails
+    new_prefs["_users"]["admin"] = dict(all_prefs)
+    return new_prefs
+
+
 def _load_for_user(user: Optional[str] = None) -> dict:
     """Load preferences for a specific user."""
     all_prefs = _load()
+    
+    # Auto-migrate legacy format if needed
+    if "_users" not in all_prefs and all_prefs:
+        all_prefs = _migrate_legacy_prefs(all_prefs)
+        _save(all_prefs)
+        
     if "_users" in all_prefs:
         if user is None:
             # Auth disabled — return first user's prefs for backward compat
             users = all_prefs["_users"]
             return dict(next(iter(users.values()), {}))
         return dict(all_prefs["_users"].get(user, {}))
-    # Legacy flat format — return as-is
-    return dict(all_prefs)
+        
+    return {}
 
 
 def _save_for_user(user: Optional[str], prefs: dict):
     """Save preferences for a specific user."""
     all_prefs = _load()
+    
+    # Auto-migrate legacy format before saving to avoid data loss
+    if "_users" not in all_prefs and all_prefs:
+        all_prefs = _migrate_legacy_prefs(all_prefs)
+        
     if user is None:
         # Auth disabled. If the store is already multi-user (e.g. auth was
         # turned off on a deployment that previously ran multi-user), writing
@@ -59,6 +101,7 @@ def _save_for_user(user: Optional[str], prefs: dict):
                 return
         _save(prefs)
         return
+        
     if "_users" not in all_prefs:
         all_prefs = {"_users": {}}
     all_prefs["_users"][user] = prefs

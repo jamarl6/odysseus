@@ -642,6 +642,9 @@ app.include_router(calendar_router)
 from routes.shell_routes import setup_shell_routes
 app.include_router(setup_shell_routes())
 
+from routes.fitness_routes import router as fitness_router
+app.include_router(fitness_router)
+
 # Cookbook (model download/serve/cache, cookbook state sync)
 from routes.cookbook_routes import setup_cookbook_routes
 app.include_router(setup_cookbook_routes())
@@ -670,6 +673,7 @@ app.include_router(setup_font_routes())
 from src.mcp_manager import McpManager
 from src.agent_tools import set_mcp_manager
 from routes.mcp_routes import setup_mcp_routes
+from routes.font_routes import setup_font_routes
 
 mcp_manager = McpManager()
 set_mcp_manager(mcp_manager)
@@ -696,6 +700,8 @@ logger.info("Webhook & API token routes initialized")
 # Notes (Google Keep-style notes/todos)
 from routes.note_routes import setup_note_routes
 app.include_router(setup_note_routes(task_scheduler))
+
+
 
 # Email
 from routes.email_routes import setup_email_routes
