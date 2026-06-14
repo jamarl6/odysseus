@@ -140,3 +140,43 @@ async def add_temporary_note(request: Request, payload: NotePayload):
         return JSONResponse(content={"status": "success"})
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+class FilePayload(BaseModel):
+    content: str
+
+ALLOWED_FITNESS_FILES = {"ziele.md", "wochenplan.md", "temporaere_notizen.md", "messwerte_log.md"}
+
+@router.get("/api/fitness_coach/files/{filename}")
+async def get_fitness_file(request: Request, filename: str):
+    if filename not in ALLOWED_FITNESS_FILES:
+        raise HTTPException(status_code=400, detail="Invalid filename")
+        
+    path = get_fitness_metrics_path(request)
+    workspace = os.path.dirname(path)
+    file_path = os.path.join(workspace, filename)
+    
+    if not os.path.exists(file_path):
+        return JSONResponse(content={"content": ""})
+        
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            content = f.read()
+        return JSONResponse(content={"content": content})
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/api/fitness_coach/files/{filename}")
+async def save_fitness_file(request: Request, filename: str, payload: FilePayload):
+    if filename not in ALLOWED_FITNESS_FILES:
+        raise HTTPException(status_code=400, detail="Invalid filename")
+        
+    path = get_fitness_metrics_path(request)
+    workspace = os.path.dirname(path)
+    file_path = os.path.join(workspace, filename)
+    
+    try:
+        with open(file_path, "w", encoding="utf-8") as f:
+            f.write(payload.content)
+        return JSONResponse(content={"status": "success"})
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
