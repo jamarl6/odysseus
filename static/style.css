@@ -36177,6 +36177,7 @@ body.theme-frosted .modal {
   opacity: 0.7;
   margin-bottom: 4px;
   text-align: center;
+  white-space: nowrap;
 }
 .circular-chart {
   display: block;

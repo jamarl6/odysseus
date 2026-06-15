@@ -3273,7 +3273,7 @@ async function updateFitnessDashboard(meta) {
           calcBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="anim-spin"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 10 10"/></svg>';
           calcBtn.disabled = true;
 
-          const prompt = "Bitte lies meine neusten Vitalwerte aus dem Log und meine temporären Notizen, berechne meinen heutigen Condition-Score (0-100) und schreibe den neuen Score in den condition-Block von fitness_metrics.json. Schreibe in das Feld 'text' des condition-Blocks ein kurzes Label (max 2 Wörter, z.B. 'Gut', 'Eingeschränkt'). Schreibe ZUSÄTZLICH eine kurze Erklärung (max 1-2 Sätze inkl. kleinem Tipp) in das Feld 'tooltip' innerhalb des condition-Blocks, warum du diesen Wert gewählt hast. (WICHTIG: Denke in deinen internen <thought> Tags extrem kurz und in Stichpunkten, um Token zu sparen. Du musst keine Romane schreiben, komme schnell zum Ergebnis.)";
+          const prompt = "Bitte lies meine neusten Vitalwerte aus dem Log und meine temporären Notizen, berechne meinen heutigen Condition-Score (0-100) und schreibe den neuen Score in den condition-Block von fitness_metrics.json. Schreibe in das Feld 'text' des condition-Blocks ein kurzes Label (max 2 Wörter, z.B. 'Gut', 'Eingeschränkt'). Schreibe ZUSÄTZLICH eine kurze Erklärung (max 1-2 Sätze inkl. kleinem Tipp) in das Feld 'tooltip' innerhalb des condition-Blocks, warum du diesen Wert gewählt hast. (WICHTIG: Antworte SOFORT mit dem Tool Call und gib keinerlei Erklärungen oder Gedanken vorher aus, um Token zu sparen. Du musst keine Romane schreiben, komme direkt zum Ergebnis.)";
           
           const fd = new FormData();
           fd.append('message', prompt);

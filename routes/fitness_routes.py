@@ -144,7 +144,7 @@ async def add_temporary_note(request: Request, payload: NotePayload):
 class FilePayload(BaseModel):
     content: str
 
-ALLOWED_FITNESS_FILES = {"ziele.md", "wochenplan.md", "temporaere_notizen.md", "messwerte_log.md"}
+ALLOWED_FITNESS_FILES = {"ziele.md", "wochenplan.md", "trainingsplan.md", "temporaere_notizen.md", "messwerte_log.md"}
 
 @router.get("/api/fitness_coach/files/{filename}")
 async def get_fitness_file(request: Request, filename: str):
