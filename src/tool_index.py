@@ -398,7 +398,9 @@ class ToolIndex:
         # Deep research intent (incl. common typo "reserach")
         frozenset({"web search", "search the web", "search online", "look up",
                    "google", "latest", "current", "news", "weather",
-                   "forecast", "stock price", "price of"}):
+                   "forecast", "stock price", "price of",
+                   "wann", "wer", "aktuell", "heute", "nachrichten",
+                   "wetter", "aktie", "internet", "suche", "recherchiere"}):
             {"web_search", "web_fetch"},
         frozenset({"research", "reserach", "reasearch", "look into", "investigate",
                    "deep dive", "deep research", "find out about", "study up on",
