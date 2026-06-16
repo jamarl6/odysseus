@@ -32,10 +32,11 @@ _PLEASE = r"^\s*(?:(?:please|ok(?:ay)?|alright|right|sure|cool|great|thanks)[\s,
 _CALENDAR_ACTION = (
     r"(?:add|adding|create|creating|recreate|recreating|schedule|scheduling|"
     r"reschedule|rescheduling|book|booking|put|set\s+up|make|making|"
-    r"delete|deleting|remove|removing|cancel|cancelling|canceling)"
+    r"delete|deleting|remove|removing|cancel|cancelling|canceling|"
+    r"füge|trage|erstell|mach|plan|buch|setz|lösch|entfern|sag\s+ab)"
 )
-_CALENDAR_THING = r"(?:calendar|calendar\s+(?:entry|item)|event|meeting|appointment|entry|call)"
-_CALENDAR_READ_THING = r"(?:calendar|schedule|events?|meetings?|appointments?|classes?)"
+_CALENDAR_THING = r"(?:calendar|calendar\s+(?:entry|item)|event|meeting|appointment|entry|call|kalender|termin|besprechung|meeting|eintrag|kalendereintrag|ereignis)"
+_CALENDAR_READ_THING = r"(?:calendar|schedule|events?|meetings?|appointments?|classes?|kalender|termine?|besprechungen?|einträge|ereignisse)"
 _EXPLANATORY_PREFIX = re.compile(
     r"^\s*(?:how\s+(?:do|can)\s+i|can\s+you\s+explain|what\s+about|tell\s+me\s+how|show\s+me\s+how)\b",
     re.I,

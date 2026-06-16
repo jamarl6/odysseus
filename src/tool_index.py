@@ -346,7 +346,8 @@ class ToolIndex:
         # believed it had only email tools and refused web/other tasks (#1707).
         frozenset({"email", "emails", "mail", "mails", "gmail", "googlemail", "message", "messages", "send", "reply", "replies", "inbox", "unread"}):
             {"list_email_accounts", "list_emails", "read_email", "send_email", "reply_to_email", "bulk_email", "delete_email", "archive_email", "mark_email_read", "resolve_contact", "ui_control"},
-        frozenset({"calendar", "event", "meeting", "schedule", "appointment"}):
+        frozenset({"calendar", "event", "meeting", "schedule", "appointment",
+                   "kalender", "termin", "besprechung", "kalendereintrag"}):
             {"manage_calendar"},
         frozenset({"note", "todo", "reminder", "remind", "checklist", "remember to"}):
             {"manage_notes"},
