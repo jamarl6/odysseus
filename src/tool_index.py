@@ -350,7 +350,7 @@ class ToolIndex:
                    "kalender", "termin", "besprechung", "kalendereintrag"}):
             {"manage_calendar"},
         frozenset({"note", "todo", "reminder", "remind", "checklist", "remember to",
-                   "notiz", "aufgabe", "erinnerung", "erinnere", "checkliste", "merk dir"}):
+                   "notiz", "notizen", "aufgabe", "erinnerung", "erinnere", "checkliste", "merk dir", "eintragen"}):
             {"manage_notes"},
         # Chat/session management. "rename" alone maps to documents below, so a
         # request like "rename the last 12 sessions/chats" needs these session

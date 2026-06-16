@@ -77,10 +77,10 @@ _ROUTING_PATTERNS: tuple[tuple[str, str, Pattern[str]], ...] = tuple(
 
         # Notes, todos, checklists, and reminders.
         ("notes", "reminder request", r"\b(?:remind|erinnere)\s+m(?:e|ich)\b"),
-        ("notes", "assistant note/todo action request", rf"{_ACTION_QUESTION}(?:add|create|make|take|jot|write\s+down|set|erstell|mach|schreib|notier|setz|füge)\b.{{0,120}}\b(?:note|todo|task|checklist|reminder|notiz|aufgabe|erinnerung)\b"),
-        ("notes", "note/todo imperative request", rf"{_PLEASE}(?:add|create|make|erstell|mach|schreib|notier|setz|füge)\s+(?:a\s+|an\s+|eine\s+|ein\s+)?(?:todo|task|reminder|note|checklist|notiz|aufgabe|erinnerung)\b"),
-        ("notes", "take note request", rf"{_PLEASE}(?:take|jot|write\s+down|schreib|notier)\s+(?:a\s+|an\s+|eine\s+)?(?:note|notiz)\b"),
-        ("notes", "add item to notes/todo request", rf"{_PLEASE}(?:add|jot|write\s+down|füge|schreib|notier)\b.{{0,120}}\b(?:to|in|into|zu|auf)\s+(?:my\s+|the\s+|meine\s+|die\s+)?(?:todo(?:\s+list)?|task\s+list|notes?|checklist|notiz|aufgabe)\b"),
+        ("notes", "assistant note/todo action request", rf"{_ACTION_QUESTION}(?:add|create|make|take|jot|write\s+down|set|erstell|mach|schreib|notier|setz|füge|eintragen)\b.{{0,120}}\b(?:note|todo|task|checklist|reminder|notiz|notizen|aufgabe|erinnerung)\b"),
+        ("notes", "note/todo imperative request", rf"{_PLEASE}(?:add|create|make|erstell|mach|schreib|notier|setz|füge|trag)\s+(?:a\s+|an\s+|eine\s+|ein\s+)?(?:todo|task|reminder|note|checklist|notiz|notizen|aufgabe|erinnerung)\b"),
+        ("notes", "take note request", rf"{_PLEASE}(?:take|jot|write\s+down|schreib|notier|trag)\s+(?:a\s+|an\s+|eine\s+)?(?:note|notiz|notizen)\b"),
+        ("notes", "add item to notes/todo request", rf"{_PLEASE}(?:add|jot|write\s+down|füge|schreib|notier|trag)\b.{{0,120}}\b(?:to|in|into|zu|auf|ein)\s+(?:my\s+|the\s+|meine\s+|die\s+)?(?:todo(?:\s+list)?|task\s+list|notes?|checklist|notiz|notizen|aufgabe)\b"),
         ("notes", "set reminder request", rf"{_PLEASE}(?:set|setz)\s+(?:a\s+|eine\s+)?(?:reminder|erinnerung)\b"),
         ("notes", "assistant reminder request", rf"{_ACTION_QUESTION}(?:set|setz)\s+(?:a\s+|eine\s+)?(?:reminder|erinnerung)\b"),
 
