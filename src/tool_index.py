@@ -349,7 +349,8 @@ class ToolIndex:
         frozenset({"calendar", "event", "meeting", "schedule", "appointment",
                    "kalender", "termin", "besprechung", "kalendereintrag"}):
             {"manage_calendar"},
-        frozenset({"note", "todo", "reminder", "remind", "checklist", "remember to"}):
+        frozenset({"note", "todo", "reminder", "remind", "checklist", "remember to",
+                   "notiz", "aufgabe", "erinnerung", "erinnere", "checkliste", "merk dir"}):
             {"manage_notes"},
         # Chat/session management. "rename" alone maps to documents below, so a
         # request like "rename the last 12 sessions/chats" needs these session
@@ -360,16 +361,20 @@ class ToolIndex:
                    "rename the chat", "rename my chat", "rename the session",
                    "archive chat", "archive session", "delete chat",
                    "delete session", "fork chat", "fork session",
-                   "name the chats", "name my chats", "rename them"}):
+                   "name the chats", "name my chats", "rename them",
+                   "sitzungen", "meine chats", "benenne chat um", "lösche chat", "archiviere chat", "historie"}):
             {"list_sessions", "manage_session"},
         frozenset({"recurring", "every day", "every hour", "every morning",
                    "every evening", "every night", "every week", "each morning",
                    "daily task", "background task", "scheduled task", "schedule a",
                    "automatically", "auto-summarize", "auto summarize",
                    "cron", "periodically", "on a schedule", "set up a task",
-                   "create a task", "summarize my inbox every", "remind me every"}):
+                   "create a task", "summarize my inbox every", "remind me every",
+                   "wiederkehrend", "jeden tag", "jede stunde", "jeden morgen",
+                   "jeden abend", "jede nacht", "jede woche", "regelmäßig",
+                   "planmäßig", "hintergrundaufgabe"}):
             {"manage_tasks"},
-        frozenset({"contact", "address", "phone", "who is"}):
+        frozenset({"contact", "address", "phone", "who is", "kontakt", "adresse", "telefonnummer", "wer ist"}):
             {"resolve_contact", "manage_contact"},
         frozenset({"save contact", "add contact", "new contact", "update contact",
                    "edit contact", "delete contact", "remove contact",
@@ -385,7 +390,9 @@ class ToolIndex:
                    "save this one for", "save that for",
                    # Postal-address-like signals
                    "postal code", "zip code", "street address",
-                   "mailing address", "their address"}):
+                   "mailing address", "their address",
+                   "speichere kontakt", "kontakt hinzufügen", "neuer kontakt",
+                   "zu kontakten", "adressbuch"}):
             {"manage_contact"},
         # "Ask another model" intent → chat_with_model relays to a
         # different model and returns its answer. ask_teacher escalates
@@ -394,7 +401,8 @@ class ToolIndex:
                    "ask minimax", "ask qwen", "ask the", "ask another model",
                    "what does", "what would", "second opinion", "other model",
                    "different model", "compare answers", "compare models",
-                   "delegate to", "have model"}):
+                   "delegate to", "have model", "frag gpt", "frag claude",
+                   "andere ki", "anderes modell"}):
             {"chat_with_model", "ask_teacher", "list_models"},
         # Deep research intent (incl. common typo "reserach")
         frozenset({"web search", "search the web", "search online", "look up",
@@ -415,19 +423,24 @@ class ToolIndex:
                    "speak faster", "speak slower", "agent timeout", "token budget",
                    "max tool calls", "use this model for", "use that model for",
                    "my settings", "change setting", "change a setting", "set setting",
-                   "preference", "preferences", "configure"}):
+                   "preference", "preferences", "configure",
+                   "ändere meine", "setze meine", "stimme", "suchmaschine", "modell",
+                   "bildqualität", "einstellungen", "konfiguriere"}):
             {"manage_settings", "ui_control"},
         # Managing EXISTING research in the Library — open/read/find/delete.
         frozenset({"my research", "the research", "research on", "open research",
                    "read research", "find research", "delete research",
                    "remove research", "list research", "my reports", "the report",
                    "saved research", "research library", "past research",
-                   "research i did", "research about"}):
+                   "research i did", "research about", "meine recherche",
+                   "der bericht", "gespeicherte recherche"}):
             {"manage_research", "trigger_research"},
         # Document edit/update intent
         frozenset({"edit", "change", "fix", "rewrite", "update",
                    "replace", "add a", "tweak", "modify", "rename", "paragraph",
-                   "section", "line", "the doc", "the docs", "the document", "the documents", "in the doc", "in the docs", "in document"}):
+                   "section", "line", "the doc", "the docs", "the document", "the documents", "in the doc", "in the docs", "in document",
+                   "bearbeite", "ändere", "reparier", "schreib neu", "aktualisier",
+                   "ersetze", "dokument"}):
             {"edit_document", "update_document", "create_document", "suggest_document"},
         # Document deletion / management — include generic open/find/read/show
         # verbs + file/doc synonyms so "open my <X>", "find the <X>", "delete
@@ -438,12 +451,15 @@ class ToolIndex:
                    "open the", "open my", "open document", "open doc", "find the",
                    "find my", "find document", "read the", "read my", "show me the",
                    "show my", "the file", "my file", "the report", "the write-up",
-                   "the writeup", "saved document", "in my library", "in the library"}):
+                   "the writeup", "saved document", "in my library", "in the library",
+                   "lösche dokument", "lösch dieses dok", "meine dateien",
+                   "öffne dokument", "zeig mir"}):
             {"manage_documents", "edit_document"},
         # Theme / UI control intent
         frozenset({"theme", "color scheme", "colors of the ui", "make it dark",
                    "make it light", "make the ui", "switch theme", "change theme",
-                   "dark mode", "light mode", "toggle"}):
+                   "dark mode", "light mode", "toggle", "design", "farbschema",
+                   "dunkelmodus", "hellmodus"}):
             {"ui_control"},
         # Cookbook / model serving intent — user says "kill cookbook",
         # "stop the model", "what's running", etc.
@@ -452,28 +468,32 @@ class ToolIndex:
                    "what's running", "what is running", "whats running",
                    "running models", "running model", "running server",
                    "shut down vllm", "shutdown vllm", "stop vllm",
-                   "stop serving", "kill serve", "cancel serve"}):
+                   "stop serving", "kill serve", "cancel serve",
+                   "stoppe modell", "was läuft", "laufende modelle"}):
             {"list_served_models", "stop_served_model"},
         # Cookbook serve / launch / preset / server selection
         frozenset({"serve", "launch", "spin up", "start the model", "run the model",
                    "preset", "presets", "which server", "what servers",
-                   "gpu box", "cookbook server", "vllm", "on the server", "on the gpu"}):
+                   "gpu box", "cookbook server", "vllm", "on the server", "on the gpu",
+                   "starte", "führe aus", "starte modell"}):
             {"serve_preset", "serve_model", "list_serve_presets",
              "list_cookbook_servers", "list_cached_models"},
         # Cookbook downloads
         frozenset({"download", "downloading", "downloads",
                    "cancel download", "stop download", "kill download",
-                   "what's downloading", "download progress", "pull model", "grab model"}):
+                   "what's downloading", "download progress", "pull model", "grab model",
+                   "herunterladen", "download abbrechen"}):
             {"list_downloads", "cancel_download", "download_model",
              "list_cookbook_servers"},
         # HuggingFace search + cached model browse
         frozenset({"huggingface", "hugging face", "hf search",
                    "find a model", "search models", "search for a model",
-                   "models for", "best model for"}):
+                   "models for", "best model for", "finde ein modell", "suche modelle"}):
             {"search_hf_models", "list_cached_models"},
         frozenset({"cached models", "list models", "my models",
                    "what models do i have", "is it downloaded",
-                   "do i have", "already downloaded", "on disk"}):
+                   "do i have", "already downloaded", "on disk",
+                   "gespeicherte modelle", "welche modelle"}):
             {"list_cached_models", "search_hf_models"},
         # Tool on/off / panel open intent — user says "turn off shell",
         # "disable search", "open library", "show gallery", etc.
@@ -486,7 +506,9 @@ class ToolIndex:
                    "open skills", "open notes", "open chats", "open sessions",
                    "show library", "show gallery", "show inbox", "show settings",
                    "show memory", "show memories", "show skills", "show notes",
-                   "show chats", "show sessions", "show documents"}):
+                   "show chats", "show sessions", "show documents",
+                   "schalte ab", "schalte ein", "deaktiviere", "aktiviere",
+                   "öffne einstellungen", "öffne notizen"}):
             {"ui_control"},
         # Document creation intent
         frozenset({"write a", "create a doc", "draft", "compose", "poem", "story",
