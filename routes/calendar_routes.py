@@ -1434,7 +1434,7 @@ def setup_calendar_routes() -> APIRouter:
         # The model gets only the schema it needs to fill out; we re-validate
         # everything client-side too.
         system_prompt = (
-            current_datetime_prompt()
+            current_datetime_prompt(include_upcoming_days=True)
             + "You are a calendar event parser. Read the user's one-line "
             "description and emit STRICT JSON describing the event. "
             f"The current user-local timestamp is {now_iso}. "
