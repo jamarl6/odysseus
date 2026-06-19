@@ -928,7 +928,8 @@ def _build_system_prompt(
     _datetime_message = None
     try:
         from src.user_time import current_datetime_context_message
-        _datetime_message = current_datetime_context_message()
+        _include_upcoming = relevant_tools is None or "manage_calendar" in relevant_tools or "manage_tasks" in relevant_tools
+        _datetime_message = current_datetime_context_message(include_upcoming_days=_include_upcoming)
     except Exception:
         pass
 

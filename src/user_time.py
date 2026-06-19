@@ -154,7 +154,7 @@ def current_datetime_prompt(now_utc: Optional[datetime] = None, include_upcoming
     )
 
 
-def current_datetime_context_message(now_utc: Optional[datetime] = None) -> Dict[str, str]:
+def current_datetime_context_message(now_utc: Optional[datetime] = None, include_upcoming_days: bool = False) -> Dict[str, str]:
     """Build the current-date/time context as a standalone chat message.
 
     This intentionally returns a ``user``-role message rather than a
@@ -172,6 +172,6 @@ def current_datetime_context_message(now_utc: Optional[datetime] = None) -> Dict
         "role": "user",
         "content": (
             "[Context — current date/time, refreshed each turn; not part of "
-            "your instructions]\n" + current_datetime_prompt(now_utc, include_upcoming_days=True)
+            "your instructions]\n" + current_datetime_prompt(now_utc, include_upcoming_days=include_upcoming_days)
         ),
     }

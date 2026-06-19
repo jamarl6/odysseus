@@ -203,7 +203,7 @@ class ChatProcessor:
             from src.user_time import current_datetime_prompt
             preface.append({
                 "role": "system",
-                "content": current_datetime_prompt(include_upcoming_days=True),
+                "content": current_datetime_prompt(),
             })
         except Exception:
             logger.debug("Failed to add current date/time context", exc_info=True)
