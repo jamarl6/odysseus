@@ -171,16 +171,22 @@ def setup_personal_routes(personal_docs_registry, rag_manager, rag_available):
         return resolved
     
     @router.get("")
-    def api_personal_list(owner: str = Depends(require_user), _admin: None = Depends(require_admin)):
+    def api_personal_list(request: Request, owner: str = Depends(require_user), _admin: None = Depends(require_admin)):
         """Enhanced version that includes directories"""
-        files = [{"name": f["name"], "size": f["size"], "path": f.get("path", "")} for f in personal_docs_manager.index]
-        directories = personal_docs_manager.get_indexed_directories() if hasattr(personal_docs_manager, "get_indexed_directories") else []
+        manager = _get_manager(request)
+        if not manager:
+            return {"files": [], "directories": []}
+        files = [{"name": f["name"], "size": f["size"], "path": f.get("path", "")} for f in manager.index]
+        directories = manager.get_indexed_directories() if hasattr(manager, "get_indexed_directories") else []
         return {"files": files, "directories": directories}
     
     @router.post("/reload")
-    def api_personal_reload(owner: str = Depends(require_user), _admin: None = Depends(require_admin)):
-        personal_docs_manager.refresh_index()
-        return {"ok": True, "count": len(personal_docs_manager.index)}
+    def api_personal_reload(request: Request, owner: str = Depends(require_user), _admin: None = Depends(require_admin)):
+        manager = _get_manager(request)
+        if not manager:
+            return {"ok": False, "error": "Manager not available"}
+        manager.refresh_index()
+        return {"ok": True, "count": len(manager.index)}
     
     @router.post("/add_directory")
     async def add_directory_to_rag(
@@ -217,7 +223,9 @@ def setup_personal_routes(personal_docs_registry, rag_manager, rag_available):
                 
                 if result["success"]:
                     # Also update the personal_docs_manager to track this directory
-                    personal_docs_manager.add_directory(directory, index=False)
+                    manager = _get_manager(request)
+                    if manager:
+                        manager.add_directory(directory, index=False)
                     
                     return {
                         "success": True,
@@ -258,8 +266,9 @@ def setup_personal_routes(personal_docs_registry, rag_manager, rag_available):
             logger.info(f"Removing directory from RAG: {directory}")
 
             # Always remove from personal_docs_manager tracking
-            if hasattr(personal_docs_manager, 'remove_directory'):
-                personal_docs_manager.remove_directory(directory)
+            manager = _get_manager(request)
+            if manager and hasattr(manager, 'remove_directory'):
+                manager.remove_directory(directory)
 
             # Remove from RAG vector store (best-effort)
             rag = _rag()
@@ -341,8 +350,9 @@ def setup_personal_routes(personal_docs_registry, rag_manager, rag_available):
                 total_failed += 1
 
         # Track uploads directory
-        if uploaded_files and hasattr(_get_manager(request), "add_directory"):
-            _get_manager(request).add_directory(upload_dir, index=False)
+        manager = _get_manager(request)
+        if uploaded_files and manager and hasattr(manager, "add_directory"):
+            manager.add_directory(upload_dir, index=False)
 
         return {
             "success": True,
@@ -352,7 +362,7 @@ def setup_personal_routes(personal_docs_registry, rag_manager, rag_available):
         }
 
     @router.delete("/file")
-    async def delete_file_from_rag(filepath: str = Query(...), owner: str = Depends(require_user), _admin: None = Depends(require_admin)):
+    async def delete_file_from_rag(request: Request, filepath: str = Query(...), owner: str = Depends(require_user), _admin: None = Depends(require_admin)):
         """Delete a specific file from RAG index and optionally from disk."""
         try:
             # Remove chunks from RAG vector store (best-effort)
@@ -386,7 +396,9 @@ def setup_personal_routes(personal_docs_registry, rag_manager, rag_available):
                     pass  # already gone — race with another request or cleanup
 
             # Exclude the file from the listing (persists across restarts)
-            personal_docs_manager.exclude_file(filepath)
+            manager = _get_manager(request)
+            if manager:
+                manager.exclude_file(filepath)
 
             return {
                 "success": True,
