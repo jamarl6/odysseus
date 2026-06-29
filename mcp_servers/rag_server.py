@@ -18,13 +18,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 server = Server("rag")
 
 _rag_manager = None
-_personal_docs_manager = None
+_personal_docs_registry = None
 _initialized = False
 
 
 def _ensure_init():
     """Lazy-init RAG managers on first use."""
-    global _rag_manager, _personal_docs_manager, _initialized
+    global _rag_manager, _personal_docs_registry, _initialized
     if _initialized:
         return
     _initialized = True
@@ -37,8 +37,8 @@ def _ensure_init():
 
     try:
         from src.constants import SHARED_DIR
-        from src.personal_docs import PersonalDocsManager
-        _personal_docs_manager = PersonalDocsManager(SHARED_DIR, _rag_manager)
+        from src.personal_docs import PersonalDocsRegistry
+        _personal_docs_registry = PersonalDocsRegistry(_rag_manager)
     except Exception:
         pass
 
@@ -73,6 +73,7 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
     _ensure_init()
     action = arguments.get("action", "")
 
+    _personal_docs_manager = _personal_docs_registry.get_manager("default") if _personal_docs_registry else None
     if action == "list":
         if not _personal_docs_manager:
             return [TextContent(type="text", text="Personal docs manager not available. RAG may not be configured.")]

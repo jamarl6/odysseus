@@ -79,7 +79,7 @@ def rename_personal_upload_owner(
     old_owner: str,
     new_owner: str,
     *,
-    personal_docs_manager: Any = None,
+    personal_docs_registry: Any = None,
     rag_manager: Any = None,
 ) -> Dict[str, Any]:
     """Move direct personal uploads and rewrite RAG owner metadata on user rename."""
@@ -102,7 +102,8 @@ def rename_personal_upload_owner(
                 moved_files += 1
         _remove_empty_tree(old_dir)
 
-    if personal_docs_manager is not None:
+    if personal_docs_registry is not None:
+        personal_docs_manager = personal_docs_registry.get_manager(old_owner)
         rename_directory = getattr(personal_docs_manager, "rename_directory", None)
         if callable(rename_directory):
             rename_directory(old_dir, new_dir, path_map=path_map)
@@ -127,12 +128,12 @@ def rename_personal_upload_owner(
     }
 
 
-def setup_personal_routes(personal_docs_manager, rag_manager, rag_available):
+def setup_personal_routes(personal_docs_registry, rag_manager, rag_available):
     """
     Setup personal documents related routes.
 
     Args:
-        personal_docs_manager: PersonalDocsManager instance
+        personal_docs_registry: PersonalDocsRegistry instance
         rag_manager: RAG manager instance (may be None)
         rag_available: Boolean indicating if RAG is available
 
@@ -140,6 +141,11 @@ def setup_personal_routes(personal_docs_manager, rag_manager, rag_available):
         APIRouter instance with personal docs routes
     """
     router = APIRouter(prefix="/api/personal")
+
+    def _get_manager(request: Request):
+        from src.auth_helpers import effective_user
+        return personal_docs_registry.get_manager(effective_user(request)) if personal_docs_registry else None
+
 
     def _rag():
         """Get the current RAG manager, retrying init if needed."""
@@ -335,8 +341,8 @@ def setup_personal_routes(personal_docs_manager, rag_manager, rag_available):
                 total_failed += 1
 
         # Track uploads directory
-        if uploaded_files and hasattr(personal_docs_manager, "add_directory"):
-            personal_docs_manager.add_directory(upload_dir, index=False)
+        if uploaded_files and hasattr(_get_manager(request), "add_directory"):
+            _get_manager(request).add_directory(upload_dir, index=False)
 
         return {
             "success": True,
