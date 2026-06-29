@@ -636,7 +636,7 @@ app.include_router(setup_cleanup_routes(session_manager))
 
 # Personal docs
 from routes.personal_routes import setup_personal_routes
-app.include_router(setup_personal_routes(personal_docs_mgr, rag_manager, rag_available))
+app.include_router(setup_personal_routes(personal_docs_registry, rag_manager, rag_available))
 
 # Embedding model management
 from routes.embedding_routes import setup_embedding_routes
@@ -747,7 +747,7 @@ logger.info("MCP routes initialized")
 from src.ai_interaction import set_session_manager as set_ai_session_manager, set_memory_manager as set_ai_memory_manager, set_rag_manager as set_ai_rag_manager
 set_ai_session_manager(session_manager)
 set_ai_memory_manager(memory_manager, memory_vector)
-set_ai_rag_manager(rag_manager, personal_docs_mgr)
+set_ai_rag_manager(rag_manager, personal_docs_registry)
 logger.info("AI interaction tools initialized (session, memory, RAG, UI control)")
 
 # Webhooks
