@@ -4,109 +4,79 @@ import os
 from typing import Optional
 from fastapi import APIRouter, Request
 from src.auth_helpers import get_current_user
-from src.constants import USER_PREFS_FILE
+from src.constants import DATA_DIR
+from src.user_paths import get_user_prefs_path
+import shutil
 
-PREFS_FILE = USER_PREFS_FILE
+LEGACY_PREFS_FILE = os.path.join(DATA_DIR, "user_prefs.json")
+BACKUP_PREFS_FILE = os.path.join(DATA_DIR, "user_prefs.legacy_backup.json")
 
-
-def _load():
-    """Load the raw prefs file (internal use only)."""
+def _migrate_if_needed():
+    """Migrate legacy flat or _users format preferences into per-user files."""
+    if not os.path.exists(LEGACY_PREFS_FILE):
+        return
+        
     try:
-        with open(PREFS_FILE, "r", encoding="utf-8") as f:
+        with open(LEGACY_PREFS_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            
+        if not isinstance(data, dict):
+            return
+            
+        if "_users" in data:
+            users_dict = data["_users"]
+        else:
+            first_user = "admin"
+            auth_file = os.path.join(DATA_DIR, "auth.json")
+            if os.path.exists(auth_file):
+                with open(auth_file, "r", encoding="utf-8") as f:
+                    auth_data = json.load(f)
+                for u, udata in auth_data.items():
+                    if udata.get("is_admin"):
+                        first_user = u
+                        break
+            users_dict = {first_user: data}
+            
+        for u, prefs in users_dict.items():
+            user_path = get_user_prefs_path(u)
+            if not os.path.exists(user_path):
+                os.makedirs(os.path.dirname(user_path), exist_ok=True)
+                with open(user_path, "w", encoding="utf-8") as f:
+                    json.dump(prefs, f, indent=2)
+                    
+        shutil.move(LEGACY_PREFS_FILE, BACKUP_PREFS_FILE)
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f"Failed to migrate legacy prefs: {e}")
+
+def _load_for_user(user: Optional[str] = None) -> dict:
+    """Load preferences for a specific user from their isolated folder."""
+    _migrate_if_needed()
+    if not user:
+        user = "default"
+        
+    path = get_user_prefs_path(user)
+    try:
+        with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)
             return data if isinstance(data, dict) else {}
     except (FileNotFoundError, json.JSONDecodeError):
         return {}
 
-
-def _save(prefs):
-    os.makedirs(os.path.dirname(PREFS_FILE) or ".", exist_ok=True)
-    tmp = f"{PREFS_FILE}.tmp.{os.getpid()}"
+def _save_for_user(user: Optional[str], prefs: dict):
+    """Save preferences for a specific user to their isolated folder."""
+    _migrate_if_needed()
+    if not user:
+        user = "default"
+        
+    path = get_user_prefs_path(user)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    tmp = f"{path}.tmp.{os.getpid()}"
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(prefs, f, indent=2)
         f.flush()
         os.fsync(f.fileno())
-    os.replace(tmp, PREFS_FILE)
-
-
-def _migrate_legacy_prefs(all_prefs: dict) -> dict:
-    """Migrate legacy flat preferences into the new _users format."""
-    if not all_prefs or "_users" in all_prefs:
-        return all_prefs
-
-    new_prefs = {"_users": {}}
-    try:
-        auth_file = os.path.join("data", "auth.json")
-        if os.path.exists(auth_file):
-            with open(auth_file, "r", encoding="utf-8") as f:
-                auth_data = json.load(f)
-                
-            first_user = None
-            for u, data in auth_data.items():
-                if data.get("is_admin"):
-                    first_user = u
-                    break
-            if not first_user and auth_data:
-                first_user = next(iter(auth_data))
-                
-            if first_user:
-                new_prefs["_users"][first_user] = dict(all_prefs)
-                return new_prefs
-    except Exception:
-        pass
-        
-    # Fallback if no auth.json or it fails
-    new_prefs["_users"]["admin"] = dict(all_prefs)
-    return new_prefs
-
-
-def _load_for_user(user: Optional[str] = None) -> dict:
-    """Load preferences for a specific user."""
-    all_prefs = _load()
-    
-    # Auto-migrate legacy format if needed
-    if "_users" not in all_prefs and all_prefs:
-        all_prefs = _migrate_legacy_prefs(all_prefs)
-        _save(all_prefs)
-        
-    if "_users" in all_prefs:
-        if user is None:
-            # Auth disabled — return first user's prefs for backward compat
-            users = all_prefs["_users"]
-            return dict(next(iter(users.values()), {}))
-        return dict(all_prefs["_users"].get(user, {}))
-        
-    return {}
-
-
-def _save_for_user(user: Optional[str], prefs: dict):
-    """Save preferences for a specific user."""
-    all_prefs = _load()
-    
-    # Auto-migrate legacy format before saving to avoid data loss
-    if "_users" not in all_prefs and all_prefs:
-        all_prefs = _migrate_legacy_prefs(all_prefs)
-        
-    if user is None:
-        # Auth disabled. If the store is already multi-user (e.g. auth was
-        # turned off on a deployment that previously ran multi-user), writing
-        # `prefs` flat would overwrite the whole `_users` map and destroy every
-        # other user's preferences. Instead write back into the same (first)
-        # slot _load_for_user(None) reads from, preserving the others.
-        if "_users" in all_prefs:
-            users = all_prefs["_users"]
-            first_key = next(iter(users), None)
-            if first_key is not None:
-                users[first_key] = prefs
-                _save(all_prefs)
-                return
-        _save(prefs)
-        return
-        
-    if "_users" not in all_prefs:
-        all_prefs = {"_users": {}}
-    all_prefs["_users"][user] = prefs
-    _save(all_prefs)
+    os.replace(tmp, path)
 
 
 def setup_prefs_routes():

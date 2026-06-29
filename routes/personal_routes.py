@@ -7,7 +7,7 @@ import uuid
 from typing import Any, Dict, List, Tuple
 from fastapi import APIRouter, HTTPException, Query, Request, UploadFile, File, Depends
 from src.request_models import DirectoryRequest
-from core.constants import BASE_DIR, PERSONAL_DIR, PERSONAL_UPLOADS_DIR
+from core.constants import BASE_DIR, SHARED_DIR, PERSONAL_UPLOADS_DIR
 from src.rag_singleton import get_rag_manager
 from src.auth_helpers import require_privilege, require_user
 from core.middleware import require_admin
@@ -153,7 +153,7 @@ def setup_personal_routes(personal_docs_manager, rag_manager, rag_available):
         # realpath (not abspath) so a symlink inside PERSONAL_DIR that points
         # outside it is resolved before the commonpath confinement check below;
         # abspath only normalises `..` and would let such a symlink escape.
-        base_abs = os.path.realpath(PERSONAL_DIR)
+        base_abs = os.path.realpath(SHARED_DIR)
         candidate = directory if os.path.isabs(directory) else os.path.join(base_abs, directory)
         resolved = os.path.realpath(candidate)
         try:
@@ -161,7 +161,7 @@ def setup_personal_routes(personal_docs_manager, rag_manager, rag_available):
         except ValueError:
             in_base = False
         if not in_base:
-            raise HTTPException(403, "Directory must be inside personal documents")
+            raise HTTPException(403, "Directory must be inside shared documents")
         return resolved
     
     @router.get("")
@@ -243,7 +243,7 @@ def setup_personal_routes(personal_docs_manager, rag_manager, rag_available):
             JSON response confirming removal
         """
         try:
-            # Confine to PERSONAL_DIR — parity with add_directory_to_rag (which
+            # Confine to SHARED_DIR — parity with add_directory_to_rag (which
             # resolves the path the same way). Without this, an arbitrary or
             # `..`-escaping path is passed straight to
             # personal_docs_manager.remove_directory / rag.remove_directory.

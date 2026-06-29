@@ -28,8 +28,7 @@ class DataConfig(BaseSettings):
     sessions_file: Path = Field(default=Path(_DATA_DIR_CONST) / "sessions.json", description="Sessions storage file")
     memory_file: Path = Field(default=Path(_DATA_DIR_CONST) / "memory.json", description="Memory storage file")
     memory_doc: Path = Field(default=Path(_DATA_DIR_CONST) / "memory_doc.md", description="Memory document file")
-    personal_dir: Path = Field(default=Path(_DATA_DIR_CONST) / "personal_docs", description="Personal documents directory")
-    runbook_dir: Path = Field(default=Path(_DATA_DIR_CONST) / "personal_docs" / "runbook", description="Runbook directory")
+    shared_dir: Path = Field(default=Path(_DATA_DIR_CONST) / "shared_docs", description="Shared documents directory")
     
     # Upload settings
     max_upload_size: int = Field(default=10 * 1024 * 1024, description="Maximum upload size in bytes (10MB)")
@@ -163,8 +162,7 @@ class AppConfig(BaseSettings):
             "sessions_file": data_dir / "sessions.json",
             "memory_file": data_dir / "memory.json",
             "memory_doc": data_dir / "memory_doc.md",
-            "personal_dir": data_dir / "personal_docs",
-            "runbook_dir": data_dir / "personal_docs" / "runbook",
+            "shared_dir": data_dir / "shared_docs",
             "max_upload_size": max_upload_size,
             "allowed_extensions": allowed_extensions,
             "chunk_size": chunk_size,
@@ -183,8 +181,7 @@ def create_directories():
     directories = [
         config.data.data_dir,
         config.data.uploads_dir,
-        config.data.personal_dir,
-        config.data.runbook_dir
+        config.data.shared_dir
     ]
     
     for directory in directories:

@@ -1,8 +1,8 @@
 """Regression: _resolve_allowed_personal_dir must resolve symlinks (realpath)
-when confining a path to PERSONAL_DIR.
+when confining a path to SHARED_DIR.
 
 It used os.path.abspath, which normalises ``..`` but does NOT resolve symlinks,
-so a symlink placed inside PERSONAL_DIR pointing outside it passes the
+so a symlink placed inside SHARED_DIR pointing outside it passes the
 os.path.commonpath confinement check and lets index_personal_documents read
 files outside the root. os.path.realpath resolves the symlink before the check.
 
@@ -29,7 +29,7 @@ def test_confinement_uses_realpath_not_abspath():
     body = _function_source(SRC.read_text(), "_resolve_allowed_personal_dir")
     assert "os.path.realpath" in body, (
         "_resolve_allowed_personal_dir must use os.path.realpath so a symlink "
-        "inside PERSONAL_DIR cannot escape the confinement check"
+        "inside SHARED_DIR cannot escape the confinement check"
     )
     assert "os.path.abspath" not in body, (
         "os.path.abspath does not resolve symlinks; the confinement check must "

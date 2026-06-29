@@ -36,9 +36,9 @@ def _ensure_init():
         pass
 
     try:
-        from src.constants import PERSONAL_DIR
+        from src.constants import SHARED_DIR
         from src.personal_docs import PersonalDocsManager
-        _personal_docs_manager = PersonalDocsManager(PERSONAL_DIR, _rag_manager)
+        _personal_docs_manager = PersonalDocsManager(SHARED_DIR, _rag_manager)
     except Exception:
         pass
 
