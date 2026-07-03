@@ -118,7 +118,7 @@ def require_privilege(request: Request, key: str) -> str:
     them. In unauthenticated single-user mode (`require_user` returns ""),
     privileges aren't enforced.
     """
-    user = require_user(request)
+    user = require_authenticated_request(request)
     if not user:
         return user
     auth_mgr = getattr(request.app.state, "auth_manager", None)
