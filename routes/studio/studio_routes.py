@@ -49,6 +49,26 @@ def _get_base64_data_url(file_id: str) -> str:
         b64_str = base64.b64encode(f.read()).decode("utf-8")
     return f"data:{mime};base64,{b64_str}"
 
+@router.get("/api/studio/models")
+async def get_studio_models():
+    """Returns a curated list of top OpenRouter models for image and video generation."""
+    return {
+        "photo": [
+            {"id": "black-forest-labs/flux-1.1-pro-ultra", "name": "Flux 1.1 Pro Ultra"},
+            {"id": "black-forest-labs/flux-1.1-pro", "name": "Flux 1.1 Pro"},
+            {"id": "google/imagen-3", "name": "Google Imagen 3"},
+            {"id": "openai/dall-e-3", "name": "DALL-E 3"},
+            {"id": "stabilityai/stable-diffusion-3.5-large", "name": "Stable Diffusion 3.5 Large"}
+        ],
+        "video": [
+            {"id": "luma/dream-machine", "name": "Luma Dream Machine"},
+            {"id": "runwayml/gen-3-alpha", "name": "Runway Gen-3 Alpha"},
+            {"id": "kling-ai/kling-v1", "name": "Kling AI v1"},
+            {"id": "minimax/video-01", "name": "MiniMax Video-01"},
+            {"id": "haiper/haiper-2", "name": "Haiper 2.0"}
+        ]
+    }
+
 @router.get("/api/studio/library")
 async def studio_library(
     request: Request,
