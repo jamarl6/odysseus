@@ -1,4 +1,5 @@
 import os
+import asyncio
 import uuid
 import time
 import httpx
@@ -49,25 +50,48 @@ def _get_base64_data_url(file_id: str) -> str:
         b64_str = base64.b64encode(f.read()).decode("utf-8")
     return f"data:{mime};base64,{b64_str}"
 
+import time
+
+_studio_models_cache = None
+_studio_models_cache_time = 0
+CACHE_TTL = 3600 # 1 hour
+
 @router.get("/api/studio/models")
 async def get_studio_models():
-    """Returns a curated list of top OpenRouter models for image and video generation."""
-    return {
-        "photo": [
-            {"id": "black-forest-labs/flux-1.1-pro-ultra", "name": "Flux 1.1 Pro Ultra"},
-            {"id": "black-forest-labs/flux-1.1-pro", "name": "Flux 1.1 Pro"},
-            {"id": "google/imagen-3", "name": "Google Imagen 3"},
-            {"id": "openai/dall-e-3", "name": "DALL-E 3"},
-            {"id": "stabilityai/stable-diffusion-3.5-large", "name": "Stable Diffusion 3.5 Large"}
-        ],
-        "video": [
-            {"id": "luma/dream-machine", "name": "Luma Dream Machine"},
-            {"id": "runwayml/gen-3-alpha", "name": "Runway Gen-3 Alpha"},
-            {"id": "kling-ai/kling-v1", "name": "Kling AI v1"},
-            {"id": "minimax/video-01", "name": "MiniMax Video-01"},
-            {"id": "haiper/haiper-2", "name": "Haiper 2.0"}
-        ]
-    }
+    """Returns a dynamic list of OpenRouter models for image and video generation."""
+    global _studio_models_cache, _studio_models_cache_time
+    
+    if _studio_models_cache and (time.time() - _studio_models_cache_time) < CACHE_TTL:
+        return _studio_models_cache
+
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            img_resp, vid_resp = await asyncio.gather(
+                client.get("https://openrouter.ai/api/v1/models?output_modalities=image"),
+                client.get("https://openrouter.ai/api/v1/models?output_modalities=video")
+            )
+            
+            photos = []
+            if img_resp.status_code == 200:
+                photos = [{"id": m["id"], "name": m.get("name", m["id"])} for m in img_resp.json().get("data", [])]
+                
+            videos = []
+            if vid_resp.status_code == 200:
+                videos = [{"id": m["id"], "name": m.get("name", m["id"])} for m in vid_resp.json().get("data", [])]
+                
+            _studio_models_cache = {
+                "photo": photos,
+                "video": videos
+            }
+            _studio_models_cache_time = time.time()
+            return _studio_models_cache
+    except Exception as e:
+        logger.error(f"Failed to fetch studio models from OpenRouter: {e}")
+        # Fallback to a minimal list if the API call fails
+        return _studio_models_cache or {
+            "photo": [{"id": "google/gemini-3-pro-image", "name": "Google Nano Banana Pro (Gemini 3)"}],
+            "video": [{"id": "google/veo-2.0-pro", "name": "Google Veo 2.0 Pro"}]
+        }
 
 @router.get("/api/studio/library")
 async def studio_library(
