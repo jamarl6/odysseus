@@ -648,6 +648,10 @@ app.include_router(setup_research_routes(research_handler, session_manager=sessi
 from routes.history_routes import setup_history_routes
 app.include_router(setup_history_routes(session_manager))
 
+# Studio
+from routes.studio import setup_studio_routes
+setup_studio_routes(app)
+
 # Search
 from routes.search_routes import setup_search_routes
 app.include_router(setup_search_routes(config))
