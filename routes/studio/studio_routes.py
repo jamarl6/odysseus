@@ -12,9 +12,10 @@ from pydantic import BaseModel
 
 from core.database import SessionLocal, StudioMedia
 from src.auth_helpers import get_current_user, require_privilege
-from src.constants import STUDIO_MEDIA_DIR
+from src.constants import STUDIO_MEDIA_DIR, UPLOAD_DIR
 from src.settings import load_settings, get_user_setting
 from routes.studio.studio_helpers import _owner_filter, _media_to_dict, get_openrouter_api_key
+import mimetypes
 
 os.makedirs(STUDIO_MEDIA_DIR, exist_ok=True)
 router = APIRouter()
@@ -24,10 +25,27 @@ class PhotoGenRequest(BaseModel):
     prompt: str
     model: Optional[str] = None
     aspect_ratio: Optional[str] = "16:9"
+    base_media_id: Optional[str] = None
 
 class VideoGenRequest(BaseModel):
     prompt: str
     model: Optional[str] = None
+    base_media_id: Optional[str] = None
+
+def _get_base64_data_url(file_id: str) -> str:
+    path = os.path.join(UPLOAD_DIR, file_id)
+    if not os.path.isfile(path):
+        for root, dirs, files in os.walk(UPLOAD_DIR):
+            if file_id in files:
+                path = os.path.join(root, file_id)
+                break
+    if not os.path.isfile(path):
+        raise HTTPException(404, "Base media file not found")
+        
+    mime = mimetypes.guess_type(path)[0] or "application/octet-stream"
+    with open(path, "rb") as f:
+        b64_str = base64.b64encode(f.read()).decode("utf-8")
+    return f"data:{mime};base64,{b64_str}"
 
 @router.get("/api/studio/library")
 async def studio_library(
@@ -106,6 +124,9 @@ async def generate_photo(request: Request, req: PhotoGenRequest):
             "prompt": req.prompt,
             "response_format": {"type": "b64_json"}
         }
+        
+        if req.base_media_id:
+            payload["input_references"] = [{"url": _get_base64_data_url(req.base_media_id)}]
 
         async with httpx.AsyncClient(timeout=180) as client:
             resp = await client.post("https://openrouter.ai/api/v1/images/generations", json=payload, headers=headers)
@@ -174,6 +195,9 @@ async def generate_video(request: Request, req: VideoGenRequest):
             "model": target_model,
             "prompt": req.prompt
         }
+        
+        if req.base_media_id:
+            payload["input_references"] = [{"url": _get_base64_data_url(req.base_media_id)}]
 
         async with httpx.AsyncClient(timeout=180) as client:
             resp = await client.post("https://openrouter.ai/api/v1/videos/generations", json=payload, headers=headers)
