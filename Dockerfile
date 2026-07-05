@@ -6,6 +6,7 @@
 FROM python:3.14-slim AS realesrgan-wheels
 RUN apt-get update && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
+RUN pip install --no-cache-dir setuptools wheel
 COPY docker/build-realesrgan-wheels.sh /usr/local/bin/build-realesrgan-wheels.sh
 RUN bash /usr/local/bin/build-realesrgan-wheels.sh /wheels
 
