@@ -293,7 +293,7 @@ function startPolling(mediaId) {
 }
 
 // Bind Sidebar button
-document.addEventListener('DOMContentLoaded', () => {
-  const btn = document.getElementById('tool-studio-btn');
-  if (btn) btn.addEventListener('click', toggleStudioPanel);
-});
+const btn = document.getElementById('tool-studio-btn');
+if (btn) {
+  btn.addEventListener('click', toggleStudioPanel);
+}
