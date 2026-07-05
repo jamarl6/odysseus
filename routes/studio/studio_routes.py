@@ -167,8 +167,7 @@ async def generate_photo(request: Request, req: PhotoGenRequest):
         
         payload = {
             "model": target_model,
-            "prompt": req.prompt,
-            "response_format": {"type": "b64_json"}
+            "prompt": req.prompt
         }
         if req.negative_prompt:
             payload["negative_prompt"] = req.negative_prompt
