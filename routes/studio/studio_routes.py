@@ -12,7 +12,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
 
 from core.database import SessionLocal, StudioMedia
-from src.auth_helpers import get_current_user, require_privilege
+from src.auth_helpers import get_current_user, require_privilege, effective_user
 from src.constants import STUDIO_MEDIA_DIR, UPLOAD_DIR
 from src.settings import load_settings, get_user_setting
 from routes.studio.studio_helpers import _owner_filter, _media_to_dict, get_openrouter_api_key
@@ -99,7 +99,7 @@ async def studio_library(
     offset: int = Query(0, ge=0),
     limit: int = Query(24, ge=1, le=100),
 ) -> Dict[str, Any]:
-    user = get_current_user(request)
+    user = effective_user(request)
     db = SessionLocal()
     try:
         q = db.query(StudioMedia).filter(StudioMedia.is_active == True)
@@ -117,7 +117,7 @@ async def studio_library(
 
 @router.get("/api/studio/media/{filename}")
 async def get_studio_media(request: Request, filename: str):
-    user = get_current_user(request)
+    user = effective_user(request)
     db = SessionLocal()
     try:
         m = db.query(StudioMedia).filter(StudioMedia.filename == filename).first()
