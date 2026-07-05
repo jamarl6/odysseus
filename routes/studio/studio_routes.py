@@ -28,12 +28,20 @@ class PhotoGenRequest(BaseModel):
     model: Optional[str] = None
     aspect_ratio: Optional[str] = "16:9"
     base_media_id: Optional[str] = None
+    size: Optional[str] = None
+    seed: Optional[int] = None
+    steps: Optional[int] = None
 
 class VideoGenRequest(BaseModel):
     prompt: str
     negative_prompt: Optional[str] = None
     model: Optional[str] = None
     base_media_id: Optional[str] = None
+    duration: Optional[int] = None
+    resolution: Optional[str] = None
+    aspect_ratio: Optional[str] = None
+    size: Optional[str] = None
+    generate_audio: Optional[bool] = None
 
 def _get_base64_data_url(file_id: str) -> str:
     path = os.path.join(UPLOAD_DIR, file_id)
@@ -171,6 +179,12 @@ async def generate_photo(request: Request, req: PhotoGenRequest):
         }
         if req.negative_prompt:
             payload["negative_prompt"] = req.negative_prompt
+        if req.size:
+            payload["size"] = req.size
+        if req.seed is not None:
+            payload["seed"] = req.seed
+        if req.steps is not None:
+            payload["steps"] = req.steps
         
         if req.base_media_id:
             payload["input_references"] = [{"url": _get_base64_data_url(req.base_media_id)}]
@@ -244,6 +258,16 @@ async def generate_video(request: Request, req: VideoGenRequest):
         }
         if req.negative_prompt:
             payload["negative_prompt"] = req.negative_prompt
+        if req.duration is not None:
+            payload["duration"] = req.duration
+        if req.resolution:
+            payload["resolution"] = req.resolution
+        if req.aspect_ratio:
+            payload["aspect_ratio"] = req.aspect_ratio
+        if req.size:
+            payload["size"] = req.size
+        if req.generate_audio is not None:
+            payload["generate_audio"] = req.generate_audio
         
         if req.base_media_id:
             payload["input_references"] = [{"url": _get_base64_data_url(req.base_media_id)}]
