@@ -250,8 +250,8 @@ async def generate_video(request: Request, req: VideoGenRequest):
 
         async with httpx.AsyncClient(timeout=180) as client:
             resp = await client.post("https://openrouter.ai/api/v1/videos", json=payload, headers=headers)
-            # OpenRouter typically returns job/polling info
-            if resp.status_code != 200:
+            # OpenRouter typically returns job/polling info with 202 Accepted
+            if resp.status_code not in (200, 202):
                 raise HTTPException(500, f"OpenRouter API error: {resp.status_code} {resp.text}")
             
             data = resp.json()
@@ -309,8 +309,8 @@ async def check_video_job(request: Request, media_id: str):
         async with httpx.AsyncClient(timeout=60) as client:
             # We stored the full polling URL in job_id
             resp = await client.get(m.job_id, headers=headers)
-            if resp.status_code != 200:
-                raise HTTPException(500, "Polling failed")
+            if resp.status_code not in (200, 202):
+                raise HTTPException(500, f"Polling failed: {resp.status_code} {resp.text}")
                 
             data = resp.json()
             status = data.get("status")
