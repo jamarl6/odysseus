@@ -23,12 +23,14 @@ logger = logging.getLogger(__name__)
 
 class PhotoGenRequest(BaseModel):
     prompt: str
+    negative_prompt: Optional[str] = None
     model: Optional[str] = None
     aspect_ratio: Optional[str] = "16:9"
     base_media_id: Optional[str] = None
 
 class VideoGenRequest(BaseModel):
     prompt: str
+    negative_prompt: Optional[str] = None
     model: Optional[str] = None
     base_media_id: Optional[str] = None
 
@@ -124,6 +126,8 @@ async def generate_photo(request: Request, req: PhotoGenRequest):
             "prompt": req.prompt,
             "response_format": {"type": "b64_json"}
         }
+        if req.negative_prompt:
+            payload["negative_prompt"] = req.negative_prompt
         
         if req.base_media_id:
             payload["input_references"] = [{"url": _get_base64_data_url(req.base_media_id)}]
@@ -195,6 +199,8 @@ async def generate_video(request: Request, req: VideoGenRequest):
             "model": target_model,
             "prompt": req.prompt
         }
+        if req.negative_prompt:
+            payload["negative_prompt"] = req.negative_prompt
         
         if req.base_media_id:
             payload["input_references"] = [{"url": _get_base64_data_url(req.base_media_id)}]
