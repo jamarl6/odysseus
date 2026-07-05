@@ -177,9 +177,9 @@ async def generate_photo(request: Request, req: PhotoGenRequest):
             payload["input_references"] = [{"url": _get_base64_data_url(req.base_media_id)}]
 
         async with httpx.AsyncClient(timeout=180) as client:
-            resp = await client.post("https://openrouter.ai/api/v1/images/generations", json=payload, headers=headers)
+            resp = await client.post("https://openrouter.ai/api/v1/images", json=payload, headers=headers)
             if resp.status_code != 200:
-                raise HTTPException(500, f"OpenRouter API error: {resp.text}")
+                raise HTTPException(500, f"OpenRouter API error: {resp.status_code} {resp.text}")
             
             data = resp.json()
             b64_data = data.get("data", [{}])[0].get("b64_json")
@@ -250,10 +250,10 @@ async def generate_video(request: Request, req: VideoGenRequest):
             payload["input_references"] = [{"url": _get_base64_data_url(req.base_media_id)}]
 
         async with httpx.AsyncClient(timeout=180) as client:
-            resp = await client.post("https://openrouter.ai/api/v1/videos/generations", json=payload, headers=headers)
+            resp = await client.post("https://openrouter.ai/api/v1/videos", json=payload, headers=headers)
             # OpenRouter typically returns job/polling info
             if resp.status_code != 200:
-                raise HTTPException(500, f"OpenRouter API error: {resp.text}")
+                raise HTTPException(500, f"OpenRouter API error: {resp.status_code} {resp.text}")
             
             data = resp.json()
             # If it returns synchronous result (unlikely but possible)
