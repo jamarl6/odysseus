@@ -187,7 +187,13 @@ async def generate_photo(request: Request, req: PhotoGenRequest):
             payload["steps"] = req.steps
         
         if req.base_media_id:
-            payload["input_references"] = [{"url": _get_base64_data_url(req.base_media_id)}]
+            refs = []
+            for m_id in req.base_media_id.split(","):
+                m_id = m_id.strip()
+                if m_id:
+                    refs.append({"url": _get_base64_data_url(m_id)})
+            if refs:
+                payload["input_references"] = refs
 
         async with httpx.AsyncClient(timeout=180) as client:
             resp = await client.post("https://openrouter.ai/api/v1/images", json=payload, headers=headers)
@@ -270,7 +276,13 @@ async def generate_video(request: Request, req: VideoGenRequest):
             payload["generate_audio"] = req.generate_audio
         
         if req.base_media_id:
-            payload["input_references"] = [{"url": _get_base64_data_url(req.base_media_id)}]
+            refs = []
+            for m_id in req.base_media_id.split(","):
+                m_id = m_id.strip()
+                if m_id:
+                    refs.append({"url": _get_base64_data_url(m_id)})
+            if refs:
+                payload["input_references"] = refs
 
         async with httpx.AsyncClient(timeout=180) as client:
             resp = await client.post("https://openrouter.ai/api/v1/videos", json=payload, headers=headers)
