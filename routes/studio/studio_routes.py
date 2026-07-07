@@ -351,8 +351,16 @@ async def check_video_job(request: Request, media_id: str):
             data = resp.json()
             status = data.get("status")
             
-            if status == "completed" or "url" in data.get("data", [{}])[0]:
-                url_data = data.get("data", [{}])[0].get("url")
+            if status == "completed":
+                url_data = None
+                
+                # Check for new video API format (unsigned_urls)
+                if "unsigned_urls" in data and data["unsigned_urls"]:
+                    url_data = data["unsigned_urls"][0]
+                # Fallback to image API format
+                elif "data" in data and isinstance(data["data"], list) and len(data["data"]) > 0 and "url" in data["data"][0]:
+                    url_data = data["data"][0]["url"]
+                
                 if url_data:
                     filepath = os.path.join(STUDIO_MEDIA_DIR, m.filename)
                     vid_resp = await client.get(url_data)
@@ -360,6 +368,9 @@ async def check_video_job(request: Request, media_id: str):
                         f.write(vid_resp.content)
                     m.file_size = os.path.getsize(filepath)
                     m.job_status = "completed"
+                    db.commit()
+                else:
+                    m.job_status = "failed"
                     db.commit()
             elif status == "failed":
                 m.job_status = "failed"
