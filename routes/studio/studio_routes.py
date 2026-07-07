@@ -314,7 +314,8 @@ async def generate_video(request: Request, req: VideoGenRequest):
             if url_data:
                 # Sync completion
                 filepath = os.path.join(STUDIO_MEDIA_DIR, filename)
-                vid_resp = await client.get(url_data)
+                req_headers = headers if "openrouter.ai" in url_data else None
+                vid_resp = await client.get(url_data, headers=req_headers)
                 vid_resp.raise_for_status()
                 with open(filepath, "wb") as f:
                     f.write(vid_resp.content)
@@ -370,7 +371,8 @@ async def check_video_job(request: Request, media_id: str):
                 
                 if url_data:
                     filepath = os.path.join(STUDIO_MEDIA_DIR, m.filename)
-                    vid_resp = await client.get(url_data)
+                    req_headers = headers if "openrouter.ai" in url_data else None
+                    vid_resp = await client.get(url_data, headers=req_headers)
                     vid_resp.raise_for_status()
                     with open(filepath, "wb") as f:
                         f.write(vid_resp.content)
