@@ -387,3 +387,47 @@ async def check_video_job(request: Request, media_id: str):
             return _media_to_dict(m)
     finally:
         db.close()
+
+@router.get("/api/studio/debug_video")
+async def debug_video(request: Request):
+    user = effective_user(request)
+    db = SessionLocal()
+    try:
+        m = db.query(StudioMedia).filter(StudioMedia.media_type == "video").order_by(StudioMedia.created_at.desc()).first()
+        if not m:
+            return {"error": "No video found in database"}
+            
+        api_key = get_openrouter_api_key(db)
+        headers = {"Authorization": f"Bearer {api_key}"} if api_key else {}
+        
+        poll_url = m.job_id or ""
+        if poll_url and not poll_url.startswith("http"):
+            if not poll_url.startswith("/"):
+                poll_url = f"/api/v1/generation?id={poll_url}"
+            poll_url = f"https://openrouter.ai{poll_url}"
+            
+        result = {
+            "database_id": m.id,
+            "filename": m.filename,
+            "raw_job_id_in_db": m.job_id,
+            "db_job_status": m.job_status,
+            "computed_poll_url": poll_url
+        }
+        
+        if not poll_url:
+            return result
+            
+        try:
+            async with httpx.AsyncClient(timeout=60, follow_redirects=True) as client:
+                resp = await client.get(poll_url, headers=headers)
+                result["openrouter_status_code"] = resp.status_code
+                try:
+                    result["openrouter_response"] = resp.json()
+                except:
+                    result["openrouter_response"] = resp.text
+        except Exception as e:
+            result["httpx_error"] = str(e)
+            
+        return result
+    finally:
+        db.close()
