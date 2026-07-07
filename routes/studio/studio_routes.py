@@ -345,8 +345,13 @@ async def check_video_job(request: Request, media_id: str):
         headers = {"Authorization": f"Bearer {api_key}"}
         
         async with httpx.AsyncClient(timeout=60, follow_redirects=True) as client:
-            # We stored the full polling URL in job_id
-            resp = await client.get(m.job_id, headers=headers)
+            poll_url = m.job_id
+            if not poll_url.startswith("http"):
+                if not poll_url.startswith("/"):
+                    poll_url = f"/api/v1/generation?id={poll_url}"
+                poll_url = f"https://openrouter.ai{poll_url}"
+                
+            resp = await client.get(poll_url, headers=headers)
             if resp.status_code not in (200, 202):
                 raise HTTPException(500, f"Polling failed: {resp.status_code} {resp.text}")
                 
