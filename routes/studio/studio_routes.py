@@ -195,7 +195,7 @@ async def generate_photo(request: Request, req: PhotoGenRequest):
             if refs:
                 payload["input_references"] = refs
 
-        async with httpx.AsyncClient(timeout=180) as client:
+        async with httpx.AsyncClient(timeout=180, follow_redirects=True) as client:
             resp = await client.post("https://openrouter.ai/api/v1/images", json=payload, headers=headers)
             if resp.status_code != 200:
                 raise HTTPException(500, f"OpenRouter API error: {resp.status_code} {resp.text}")
@@ -216,6 +216,7 @@ async def generate_photo(request: Request, req: PhotoGenRequest):
                     f.write(base64.b64decode(b64_data))
             else:
                 img_resp = await client.get(url_data)
+                img_resp.raise_for_status()
                 with open(filepath, "wb") as f:
                     f.write(img_resp.content)
 
@@ -284,7 +285,7 @@ async def generate_video(request: Request, req: VideoGenRequest):
             if refs:
                 payload["input_references"] = refs
 
-        async with httpx.AsyncClient(timeout=180) as client:
+        async with httpx.AsyncClient(timeout=180, follow_redirects=True) as client:
             resp = await client.post("https://openrouter.ai/api/v1/videos", json=payload, headers=headers)
             # OpenRouter typically returns job/polling info with 202 Accepted
             if resp.status_code not in (200, 202):
@@ -314,6 +315,7 @@ async def generate_video(request: Request, req: VideoGenRequest):
                 # Sync completion
                 filepath = os.path.join(STUDIO_MEDIA_DIR, filename)
                 vid_resp = await client.get(url_data)
+                vid_resp.raise_for_status()
                 with open(filepath, "wb") as f:
                     f.write(vid_resp.content)
                 new_media.file_size = os.path.getsize(filepath)
@@ -342,7 +344,7 @@ async def check_video_job(request: Request, media_id: str):
         api_key = get_openrouter_api_key(db)
         headers = {"Authorization": f"Bearer {api_key}"}
         
-        async with httpx.AsyncClient(timeout=60) as client:
+        async with httpx.AsyncClient(timeout=60, follow_redirects=True) as client:
             # We stored the full polling URL in job_id
             resp = await client.get(m.job_id, headers=headers)
             if resp.status_code not in (200, 202):
@@ -364,6 +366,7 @@ async def check_video_job(request: Request, media_id: str):
                 if url_data:
                     filepath = os.path.join(STUDIO_MEDIA_DIR, m.filename)
                     vid_resp = await client.get(url_data)
+                    vid_resp.raise_for_status()
                     with open(filepath, "wb") as f:
                         f.write(vid_resp.content)
                     m.file_size = os.path.getsize(filepath)
