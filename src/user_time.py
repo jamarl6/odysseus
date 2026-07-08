@@ -110,7 +110,7 @@ def timezone_label(dt: Optional[datetime] = None) -> str:
     return f"{name}, {offset_label}" if name else offset_label
 
 
-def current_datetime_prompt(now_utc: Optional[datetime] = None) -> str:
+def current_datetime_prompt(now_utc: Optional[datetime] = None, include_upcoming_days: bool = False) -> str:
     """Build reusable system prompt text for date/time reasoning."""
     if now_utc is None:
         utc_now = datetime.now(timezone.utc)
@@ -121,16 +121,32 @@ def current_datetime_prompt(now_utc: Optional[datetime] = None) -> str:
 
     local_now = now_user_local(utc_now)
     tomorrow = local_now + timedelta(days=1)
-    return (
+    
+    upcoming_str = ""
+    if include_upcoming_days:
+        upcoming_days = []
+        for i in range(1, 8):
+            d = local_now + timedelta(days=i)
+            upcoming_days.append(f"{d.strftime('%A')} ({d.strftime('%Y-%m-%d')})")
+        upcoming_str = f"The upcoming 7 days are: {', '.join(upcoming_days)}.\nUse this explicit list for any 'today', 'tomorrow', 'saturday', 'next week', or other relative-date reasoning. Never use today's date if the user specifies a future day of the week. Do not ask for an exact date just because the user used a relative date.\n"
+
+    base_prompt = (
         "## Current date and time\n"
         f"Today is {_date_label(local_now)} ({local_now.strftime('%Y-%m-%d')}). "
         f"User local time is {_clock_label(local_now)} ({timezone_label(local_now)}); "
         f"current UTC time is {utc_now.strftime('%H:%M')}.\n"
         f"Tomorrow is {_date_label(tomorrow)} ({tomorrow.strftime('%Y-%m-%d')}) "
         "in the user's local timezone.\n"
-        "Use this for any 'today', 'tomorrow', 'tonight', 'this week', or other "
-        "relative-date reasoning. Do not ask for an exact date just because the "
-        "user used a relative date.\n"
+    )
+    
+    if not include_upcoming_days:
+        base_prompt += (
+            "Use this for any 'today', 'tomorrow', 'tonight', 'this week', or other "
+            "relative-date reasoning. Do not ask for an exact date just because the "
+            "user used a relative date.\n"
+        )
+        
+    return base_prompt + upcoming_str + (
         "When scheduling calendar events with manage_calendar, pass local ISO "
         "datetimes resolved against this user-local date/time.\n"
         "When scheduling a task with manage_tasks, scheduled_time is in UTC: "
@@ -201,7 +217,7 @@ def current_datetime_context_message_for_tz(
     }
 
 
-def current_datetime_context_message(now_utc: Optional[datetime] = None) -> Dict[str, str]:
+def current_datetime_context_message(now_utc: Optional[datetime] = None, include_upcoming_days: bool = False) -> Dict[str, str]:
     """Build the current-date/time context as a standalone chat message.
 
     This intentionally returns a ``user``-role message rather than a
@@ -219,6 +235,6 @@ def current_datetime_context_message(now_utc: Optional[datetime] = None) -> Dict
         "role": "user",
         "content": (
             "[Context — current date/time, refreshed each turn; not part of "
-            "your instructions]\n" + current_datetime_prompt(now_utc)
+            "your instructions]\n" + current_datetime_prompt(now_utc, include_upcoming_days=include_upcoming_days)
         ),
     }

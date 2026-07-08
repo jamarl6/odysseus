@@ -33,7 +33,7 @@ class TimestampMixin:
         return Column(DateTime, default=utcnow_naive, onupdate=utcnow_naive, nullable=False)
 
 # Ensure the writable data directory exists before SQLite connects.
-from src.constants import DATA_DIR, AUTH_FILE, MEMORY_FILE, USER_PREFS_FILE, SETTINGS_FILE
+from src.constants import DATA_DIR, AUTH_FILE, MEMORY_FILE, SETTINGS_FILE
 Path(DATA_DIR).mkdir(parents=True, exist_ok=True)
 
 
@@ -309,6 +309,35 @@ class GalleryImage(TimestampMixin, Base):
         Index('ix_gallery_images_model', 'model'),
         Index('ix_gallery_images_active', 'is_active', 'created_at'),
     )
+
+
+class StudioMedia(TimestampMixin, Base):
+    """Stores metadata for generated photo and video media via the Studio."""
+    __tablename__ = "studio_media"
+
+    id         = Column(String, primary_key=True, index=True)
+    filename   = Column(String, nullable=False, unique=True)
+    media_type = Column(String, nullable=False, default="photo")  # "photo" or "video"
+    prompt     = Column(Text, nullable=False, default="")
+    model      = Column(String, nullable=True)
+    owner      = Column(String, nullable=True, index=True)
+    is_active  = Column(Boolean, default=True)
+    favorite   = Column(Boolean, default=False)
+    
+    # Video specific: job tracking
+    job_id     = Column(String, nullable=True, index=True)
+    job_status = Column(String, nullable=True, default="completed")  # "pending", "completed", "failed"
+
+    # File attributes
+    width      = Column(Integer, nullable=True)
+    height     = Column(Integer, nullable=True)
+    file_size  = Column(Integer, nullable=True)  # bytes
+
+    __table_args__ = (
+        Index('ix_studio_media_active', 'is_active', 'created_at'),
+        Index('ix_studio_media_owner', 'owner'),
+    )
+
 
 
 class EmailAccount(TimestampMixin, Base):
@@ -1326,7 +1355,7 @@ def _migrate_assign_legacy_owner():
         logger.warning(f"memory.json legacy migration failed: {e}")
 
     # Also migrate user_prefs.json to per-user format
-    prefs_path = USER_PREFS_FILE
+    prefs_path = os.path.join(DATA_DIR, "user_prefs.json")
     try:
         if os.path.exists(prefs_path):
             with open(prefs_path, "r", encoding="utf-8") as f:

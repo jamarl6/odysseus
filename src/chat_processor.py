@@ -81,9 +81,9 @@ def _content_tokens(text: str) -> list:
 
 
 class ChatProcessor:
-    def __init__(self, memory_manager, personal_docs_manager, memory_vector=None, skills_manager=None):
+    def __init__(self, memory_manager, rag_manager, memory_vector=None, skills_manager=None):
         self.memory_manager = memory_manager
-        self.personal_docs_manager = personal_docs_manager
+        self.rag_manager = rag_manager
         self.memory_vector = memory_vector
         self.skills_manager = skills_manager
 
@@ -237,6 +237,16 @@ class ChatProcessor:
                 "role": "system",
                 "content": preset_system_prompt
             })
+
+        try:
+            from src.user_time import current_datetime_prompt
+            preface.append({
+                "role": "system",
+                "content": current_datetime_prompt(),
+            })
+        except Exception:
+            logger.debug("Failed to add current date/time context", exc_info=True)
+
         preface.append({
             "role": "system",
             "content": UNTRUSTED_CONTEXT_POLICY,
@@ -291,9 +301,8 @@ class ChatProcessor:
         # RAG: search if enabled and rag_manager available, inject only above threshold
         if use_rag:
             try:
-                rag_manager = getattr(self.personal_docs_manager, 'rag_manager', None)
-                if rag_manager:
-                    results = rag_manager.search(message, k=5, owner=owner)
+                if self.rag_manager:
+                    results = self.rag_manager.search(message, k=5, owner=owner)
                     # Filter by similarity threshold
                     relevant = [r for r in results if r.get("similarity", 0) >= self.RAG_SIMILARITY_THRESHOLD]
                     if relevant:

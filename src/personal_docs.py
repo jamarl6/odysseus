@@ -194,11 +194,30 @@ def _string_list(values) -> list[str]:
     return [value for value in values or [] if isinstance(value, str)]
 
 
+class PersonalDocsRegistry:
+    """Registry to manage PersonalDocsManager instances per user."""
+    
+    def __init__(self, rag_manager=None):
+        self.rag_manager = rag_manager
+        self._managers = {}
+        
+    def get_manager(self, user: str) -> "PersonalDocsManager":
+        if not user:
+            user = "default"
+        if user not in self._managers:
+            from src.constants import DATA_DIR
+            personal_dir = os.path.join(DATA_DIR, "users", user, "personal_docs")
+            os.makedirs(personal_dir, exist_ok=True)
+            self._managers[user] = PersonalDocsManager(personal_dir, user, self.rag_manager)
+        return self._managers[user]
+
+
 class PersonalDocsManager:
     """Manager class for personal document indexing and retrieval."""
 
-    def __init__(self, personal_dir: str, rag_manager=None):
+    def __init__(self, personal_dir: str, user: str, rag_manager=None):
         self.personal_dir = personal_dir
+        self.user = user
         self.rag_manager = rag_manager
         self.index = []
         self.indexed_directories = []  # Track additional directories
@@ -262,7 +281,7 @@ class PersonalDocsManager:
         self._save_excluded()
         self.index = [f for f in self.index if os.path.abspath(f.get("path", "")) != os.path.abspath(filepath)]
 
-    def add_directory(self, directory: str, *, index: bool = True, owner: str = None):
+    def add_directory(self, directory: str, *, index: bool = True):
         """Add a directory to the tracking list and optionally index it."""
         # Normalize the path
         directory = os.path.abspath(directory)
@@ -288,7 +307,7 @@ class PersonalDocsManager:
             # index=False so we do not create a second ownerless copy.
             if index and self.rag_manager:
                 try:
-                    result = self.rag_manager.index_personal_documents(directory, owner=owner)
+                    result = self.rag_manager.index_personal_documents(directory, owner=self.user)
                     logger.info(f"Indexed {result.get('indexed_count', 0)} chunks from {directory}")
                 except Exception as e:
                     logger.error(f"Failed to index directory {directory}: {e}")
@@ -445,7 +464,7 @@ class PersonalDocsManager:
         
         # Index the base personal directory
         try:
-            result = self.rag_manager.index_personal_documents(self.personal_dir)
+            result = self.rag_manager.index_personal_documents(self.personal_dir, owner=self.user)
             if result.get('success'):
                 success_count += 1
                 logger.info(f"Indexed base directory: {self.personal_dir}")
@@ -461,7 +480,7 @@ class PersonalDocsManager:
                 continue
             
             try:
-                result = self.rag_manager.index_personal_documents(directory)
+                result = self.rag_manager.index_personal_documents(directory, owner=self.user)
                 if result.get('success'):
                     success_count += 1
                     logger.info(f"Indexed directory: {directory}")

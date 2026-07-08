@@ -1,4 +1,4 @@
-"""Regression: remove_directory_from_rag must confine its path to PERSONAL_DIR.
+"""Regression: remove_directory_from_rag must confine its path to SHARED_DIR.
 
 DELETE /api/personal/remove_directory took a raw ``directory`` query parameter
 and passed it straight to ``personal_docs_manager.remove_directory`` /
@@ -27,7 +27,7 @@ def test_remove_directory_confines_path():
     body = _function_source(SRC.read_text(), "remove_directory_from_rag")
     assert "_resolve_allowed_personal_dir(" in body, (
         "remove_directory_from_rag must call _resolve_allowed_personal_dir to "
-        "confine the user-supplied directory to PERSONAL_DIR (parity with "
+        "confine the user-supplied directory to SHARED_DIR (parity with "
         "add_directory_to_rag)"
     )
 

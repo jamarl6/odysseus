@@ -5,7 +5,7 @@ import logging
 from typing import Dict, Any
 
 from src.constants import (
-    DATA_DIR, PERSONAL_DIR, RUNBOOK_DIR, UPLOAD_DIR,
+    DATA_DIR, UPLOAD_DIR, SHARED_DIR,
     SESSIONS_FILE, DEFAULT_HOST, OPENAI_API_KEY
 )
 from src.memory import MemoryManager
@@ -13,7 +13,7 @@ from src.memory_provider import MemoryProviderRegistry, NativeMemoryProvider
 from services.memory.skills import SkillsManager
 from core.session_manager import SessionManager
 from core.models import set_session_manager
-from src.personal_docs import PersonalDocsManager
+from src.personal_docs import PersonalDocsRegistry
 from src.api_key_manager import APIKeyManager
 from src.preset_manager import PresetManager
 from src.chat_processor import ChatProcessor
@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 def create_directories():
     """Create necessary directories if they don't exist."""
-    for directory in (DATA_DIR, PERSONAL_DIR, RUNBOOK_DIR, UPLOAD_DIR):
+    for directory in (DATA_DIR, UPLOAD_DIR, SHARED_DIR):
         os.makedirs(directory, exist_ok=True)
         
 def initialize_managers(base_dir: str, rag_manager=None) -> Dict[str, Any]:
@@ -49,7 +49,7 @@ def initialize_managers(base_dir: str, rag_manager=None) -> Dict[str, Any]:
     session_manager = SessionManager(SESSIONS_FILE)
     set_session_manager(session_manager)  # Enable Session.add_message() persistence
     upload_handler = UploadHandler(base_dir, UPLOAD_DIR)
-    personal_docs_manager = PersonalDocsManager(PERSONAL_DIR, rag_manager)
+    personal_docs_registry = PersonalDocsRegistry(rag_manager)
     api_key_manager = APIKeyManager(DATA_DIR)
     preset_manager = PresetManager(DATA_DIR)
 
@@ -81,7 +81,7 @@ def initialize_managers(base_dir: str, rag_manager=None) -> Dict[str, Any]:
     ])
 
     # Initialize processors
-    chat_processor = ChatProcessor(memory_manager, personal_docs_manager, memory_vector=memory_vector, skills_manager=skills_manager)
+    chat_processor = ChatProcessor(memory_manager, rag_manager, memory_vector=memory_vector, skills_manager=skills_manager)
     research_handler = ResearchHandler()
     
     # Initialize chat handler with all dependencies
@@ -110,13 +110,12 @@ def initialize_managers(base_dir: str, rag_manager=None) -> Dict[str, Any]:
         "skills_manager": skills_manager,
         "session_manager": session_manager,
         "upload_handler": upload_handler,
-        "personal_docs_manager": personal_docs_manager,
+        "personal_docs_registry": personal_docs_registry,
         "api_key_manager": api_key_manager,
         "preset_manager": preset_manager,
         "chat_processor": chat_processor,
         "research_handler": research_handler,
         "chat_handler": chat_handler,
         "model_discovery": model_discovery,
-        "current_presets": preset_manager.presets,
-        "PERSONAL_INDEX": personal_docs_manager.index
+        "current_presets": preset_manager.presets
     }

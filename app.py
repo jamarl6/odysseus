@@ -550,8 +550,8 @@ memory_manager    = components["memory_manager"]
 memory_vector     = components.get("memory_vector")
 upload_handler    = components["upload_handler"]
 app.state.upload_handler = upload_handler
-personal_docs_mgr = components["personal_docs_manager"]
-app.state.personal_docs_manager = personal_docs_mgr
+personal_docs_registry = components["personal_docs_registry"]
+app.state.personal_docs_registry = personal_docs_registry
 api_key_manager   = components["api_key_manager"]
 preset_manager    = components["preset_manager"]
 chat_processor    = components["chat_processor"]
@@ -648,6 +648,10 @@ app.include_router(setup_research_routes(research_handler, session_manager=sessi
 from routes.history_routes import setup_history_routes
 app.include_router(setup_history_routes(session_manager))
 
+# Studio
+from routes.studio import setup_studio_routes
+setup_studio_routes(app)
+
 # Search
 from routes.search_routes import setup_search_routes
 app.include_router(setup_search_routes(config))
@@ -666,7 +670,7 @@ app.include_router(setup_cleanup_routes(session_manager))
 
 # Personal docs
 from routes.personal_routes import setup_personal_routes
-app.include_router(setup_personal_routes(personal_docs_mgr, rag_manager, rag_available))
+app.include_router(setup_personal_routes(personal_docs_registry, rag_manager, rag_available))
 
 # Embedding model management
 from routes.embedding_routes import setup_embedding_routes
@@ -732,6 +736,9 @@ app.include_router(calendar_router)
 from routes.shell_routes import setup_shell_routes
 app.include_router(setup_shell_routes())
 
+from routes.fitness_routes import router as fitness_router
+app.include_router(fitness_router)
+
 # Cookbook (model download/serve/cache, cookbook state sync)
 from routes.cookbook_routes import setup_cookbook_routes
 app.include_router(setup_cookbook_routes())
@@ -763,6 +770,7 @@ app.include_router(setup_font_routes())
 from src.mcp_manager import McpManager
 from src.agent_tools import set_mcp_manager
 from routes.mcp_routes import setup_mcp_routes
+from routes.font_routes import setup_font_routes
 
 mcp_manager = McpManager()
 set_mcp_manager(mcp_manager)
@@ -773,7 +781,7 @@ logger.info("MCP routes initialized")
 from src.ai_interaction import set_session_manager as set_ai_session_manager, set_memory_manager as set_ai_memory_manager, set_rag_manager as set_ai_rag_manager
 set_ai_session_manager(session_manager)
 set_ai_memory_manager(memory_manager, memory_vector)
-set_ai_rag_manager(rag_manager, personal_docs_mgr)
+set_ai_rag_manager(rag_manager, personal_docs_registry)
 logger.info("AI interaction tools initialized (session, memory, RAG, UI control)")
 
 # Webhooks
@@ -789,6 +797,8 @@ logger.info("Webhook & API token routes initialized")
 # Notes (Google Keep-style notes/todos)
 from routes.note_routes import setup_note_routes
 app.include_router(setup_note_routes(task_scheduler))
+
+
 
 # Email
 from routes.email_routes import setup_email_routes

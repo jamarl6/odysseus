@@ -13,7 +13,7 @@ from sqlalchemy import or_, and_, func
 from dateutil.rrule import rrulestr
 
 from core.database import SessionLocal, CalendarCal, CalendarDeletedEvent, CalendarEvent
-from src.auth_helpers import require_user
+from src.auth_helpers import require_authenticated_request as require_user
 from src.upload_limits import read_upload_limited, ICS_MAX_BYTES
 
 logger = logging.getLogger(__name__)
@@ -1526,7 +1526,7 @@ def setup_calendar_routes() -> APIRouter:
         # The model gets only the schema it needs to fill out; we re-validate
         # everything client-side too.
         system_prompt = (
-            current_datetime_prompt()
+            current_datetime_prompt(include_upcoming_days=True)
             + "You are a calendar event parser. Read the user's one-line "
             "description and emit STRICT JSON describing the event. "
             f"The current user-local timestamp is {now_iso}. "

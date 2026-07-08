@@ -11,7 +11,7 @@ from pydantic import BaseModel
 
 from core.database import SessionLocal, Note
 from core.middleware import INTERNAL_TOOL_USER
-from src.auth_helpers import require_user
+from src.auth_helpers import require_user, effective_user
 from src.constants import DATA_DIR
 from sqlalchemy.orm.attributes import flag_modified
 
@@ -581,6 +581,9 @@ def setup_note_routes(task_scheduler=None):
         # unconfigured first-run) still resolve to None, the single-user
         # path. fire_reminder below already gated this way; the CRUD routes
         # did not.
+        _u = effective_user(request)
+        if _u is not None:
+            return _u
         return require_user(request) or None
 
     def _is_admin_or_single_user(request: Request, user: str | None) -> bool:

@@ -38,7 +38,7 @@ _session_manager = None
 _memory_manager = None
 _memory_vector = None
 _rag_manager = None
-_personal_docs_manager = None
+_personal_docs_registry = None
 
 
 def set_session_manager(mgr):
@@ -61,9 +61,9 @@ def set_memory_manager(mgr, vector=None):
 
 
 def set_rag_manager(rag_mgr, personal_docs_mgr=None):
-    global _rag_manager, _personal_docs_manager
+    global _rag_manager, _personal_docs_registry
     _rag_manager = rag_mgr
-    _personal_docs_manager = personal_docs_mgr
+    _personal_docs_registry = personal_docs_mgr
 
 
 # ---------------------------------------------------------------------------

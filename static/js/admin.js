@@ -2570,6 +2570,8 @@ function initTokenForm() {
     const name = el('adm-tokenName').value.trim();
     if (!name) { msg.textContent = 'Token name is required'; msg.className = 'admin-error'; return; }
     const fd = new FormData(); fd.append('name', name);
+    const forUser = (el('adm-tokenForUser')?.value || '').trim();
+    if (forUser) fd.append('for_user', forUser);
     const scopes = (el('adm-tokenScopes')?.value || '').trim();
     if (scopes) fd.append('scopes', scopes);
     try {

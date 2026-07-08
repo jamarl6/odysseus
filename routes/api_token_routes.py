@@ -118,12 +118,13 @@ def setup_api_token_routes() -> APIRouter:
         name: str = Form(""),
         scopes: str = Form(None),
         profile: str = Form(None),
+        for_user: str = Form(None),
     ):
         require_admin(request)
         name = name.strip()[:MAX_NAME_LEN]
         if not name:
             raise HTTPException(400, "Token name is required")
-        owner = get_current_user(request)
+        owner = for_user.strip() if for_user and for_user.strip() else get_current_user(request)
         scope_list = _normalize_scopes(scopes, profile)
         scopes_value = ",".join(scope_list)
 

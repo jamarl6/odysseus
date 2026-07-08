@@ -801,6 +801,38 @@ async function initImageSettings() {
   if (enabledToggle) enabledToggle.addEventListener('change', function() { syncImgDisabled(); saveSettings(); });
 }
 
+/* ── Studio Settings ── */
+async function initStudioSettings() {
+  const photoSel = el('set-studioPhotoModel');
+  const videoSel = el('set-studioVideoModel');
+  if (!photoSel || !videoSel) return;
+
+  try {
+    const settingsRes = await fetch('/api/auth/settings', { credentials: 'same-origin' });
+    const settings = await settingsRes.json();
+    if (settings.studio_openrouter_photo_model) photoSel.value = settings.studio_openrouter_photo_model;
+    if (settings.studio_openrouter_video_model) videoSel.value = settings.studio_openrouter_video_model;
+  } catch (e) { console.warn('Failed to load studio settings', e); }
+
+  async function saveSettings() {
+    try {
+      await fetch('/api/auth/settings', {
+        method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          studio_openrouter_photo_model: photoSel.value.trim(),
+          studio_openrouter_video_model: videoSel.value.trim()
+        })
+      });
+    } catch (e) { console.warn('Failed to save studio settings', e); }
+  }
+  
+  // Save on blur or enter key
+  photoSel.addEventListener('change', saveSettings);
+  videoSel.addEventListener('change', saveSettings);
+  photoSel.addEventListener('blur', saveSettings);
+  videoSel.addEventListener('blur', saveSettings);
+}
+
 /* ── Vision ── */
 async function initVisionSettings() {
   const vlSel = el('set-vlModelSelect');
@@ -2339,6 +2371,7 @@ function initAll() {
   initTeacherModel();
   initUtilityModel();
   initImageSettings();
+  initStudioSettings();
   initVisionSettings();
   initTtsSettings();
   initSttSettings();

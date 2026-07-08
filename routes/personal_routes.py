@@ -7,7 +7,7 @@ import uuid
 from typing import Any, Dict, List, Tuple
 from fastapi import APIRouter, HTTPException, Query, Request, UploadFile, File, Depends
 from src.request_models import DirectoryRequest
-from core.constants import BASE_DIR, PERSONAL_DIR, PERSONAL_UPLOADS_DIR
+from core.constants import BASE_DIR, SHARED_DIR, PERSONAL_UPLOADS_DIR
 from src.rag_singleton import get_rag_manager
 from src.auth_helpers import require_privilege, require_user
 from core.middleware import require_admin
@@ -79,7 +79,7 @@ def rename_personal_upload_owner(
     old_owner: str,
     new_owner: str,
     *,
-    personal_docs_manager: Any = None,
+    personal_docs_registry: Any = None,
     rag_manager: Any = None,
 ) -> Dict[str, Any]:
     """Move direct personal uploads and rewrite RAG owner metadata on user rename."""
@@ -102,7 +102,8 @@ def rename_personal_upload_owner(
                 moved_files += 1
         _remove_empty_tree(old_dir)
 
-    if personal_docs_manager is not None:
+    if personal_docs_registry is not None:
+        personal_docs_manager = personal_docs_registry.get_manager(old_owner)
         rename_directory = getattr(personal_docs_manager, "rename_directory", None)
         if callable(rename_directory):
             rename_directory(old_dir, new_dir, path_map=path_map)
@@ -127,12 +128,12 @@ def rename_personal_upload_owner(
     }
 
 
-def setup_personal_routes(personal_docs_manager, rag_manager, rag_available):
+def setup_personal_routes(personal_docs_registry, rag_manager, rag_available):
     """
     Setup personal documents related routes.
 
     Args:
-        personal_docs_manager: PersonalDocsManager instance
+        personal_docs_registry: PersonalDocsRegistry instance
         rag_manager: RAG manager instance (may be None)
         rag_available: Boolean indicating if RAG is available
 
@@ -140,6 +141,11 @@ def setup_personal_routes(personal_docs_manager, rag_manager, rag_available):
         APIRouter instance with personal docs routes
     """
     router = APIRouter(prefix="/api/personal")
+
+    def _get_manager(request: Request):
+        from src.auth_helpers import effective_user
+        return personal_docs_registry.get_manager(effective_user(request)) if personal_docs_registry else None
+
 
     def _rag():
         """Get the current RAG manager, retrying init if needed."""
@@ -153,7 +159,7 @@ def setup_personal_routes(personal_docs_manager, rag_manager, rag_available):
         # realpath (not abspath) so a symlink inside PERSONAL_DIR that points
         # outside it is resolved before the commonpath confinement check below;
         # abspath only normalises `..` and would let such a symlink escape.
-        base_abs = os.path.realpath(PERSONAL_DIR)
+        base_abs = os.path.realpath(SHARED_DIR)
         candidate = directory if os.path.isabs(directory) else os.path.join(base_abs, directory)
         resolved = os.path.realpath(candidate)
         try:
@@ -161,20 +167,26 @@ def setup_personal_routes(personal_docs_manager, rag_manager, rag_available):
         except ValueError:
             in_base = False
         if not in_base:
-            raise HTTPException(403, "Directory must be inside personal documents")
+            raise HTTPException(403, "Directory must be inside shared documents")
         return resolved
     
     @router.get("")
-    def api_personal_list(owner: str = Depends(require_user), _admin: None = Depends(require_admin)):
+    def api_personal_list(request: Request, owner: str = Depends(require_user), _admin: None = Depends(require_admin)):
         """Enhanced version that includes directories"""
-        files = [{"name": f["name"], "size": f["size"], "path": f.get("path", "")} for f in personal_docs_manager.index]
-        directories = personal_docs_manager.get_indexed_directories() if hasattr(personal_docs_manager, "get_indexed_directories") else []
+        manager = _get_manager(request)
+        if not manager:
+            return {"files": [], "directories": []}
+        files = [{"name": f["name"], "size": f["size"], "path": f.get("path", "")} for f in manager.index]
+        directories = manager.get_indexed_directories() if hasattr(manager, "get_indexed_directories") else []
         return {"files": files, "directories": directories}
     
     @router.post("/reload")
-    def api_personal_reload(owner: str = Depends(require_user), _admin: None = Depends(require_admin)):
-        personal_docs_manager.refresh_index()
-        return {"ok": True, "count": len(personal_docs_manager.index)}
+    def api_personal_reload(request: Request, owner: str = Depends(require_user), _admin: None = Depends(require_admin)):
+        manager = _get_manager(request)
+        if not manager:
+            return {"ok": False, "error": "Manager not available"}
+        manager.refresh_index()
+        return {"ok": True, "count": len(manager.index)}
     
     @router.post("/add_directory")
     async def add_directory_to_rag(
@@ -211,7 +223,9 @@ def setup_personal_routes(personal_docs_manager, rag_manager, rag_available):
                 
                 if result["success"]:
                     # Also update the personal_docs_manager to track this directory
-                    personal_docs_manager.add_directory(directory, index=False)
+                    manager = _get_manager(request)
+                    if manager:
+                        manager.add_directory(directory, index=False)
                     
                     return {
                         "success": True,
@@ -243,7 +257,7 @@ def setup_personal_routes(personal_docs_manager, rag_manager, rag_available):
             JSON response confirming removal
         """
         try:
-            # Confine to PERSONAL_DIR — parity with add_directory_to_rag (which
+            # Confine to SHARED_DIR — parity with add_directory_to_rag (which
             # resolves the path the same way). Without this, an arbitrary or
             # `..`-escaping path is passed straight to
             # personal_docs_manager.remove_directory / rag.remove_directory.
@@ -252,8 +266,9 @@ def setup_personal_routes(personal_docs_manager, rag_manager, rag_available):
             logger.info(f"Removing directory from RAG: {directory}")
 
             # Always remove from personal_docs_manager tracking
-            if hasattr(personal_docs_manager, 'remove_directory'):
-                personal_docs_manager.remove_directory(directory)
+            manager = _get_manager(request)
+            if manager and hasattr(manager, 'remove_directory'):
+                manager.remove_directory(directory)
 
             # Remove from RAG vector store (best-effort)
             rag = _rag()
@@ -335,8 +350,9 @@ def setup_personal_routes(personal_docs_manager, rag_manager, rag_available):
                 total_failed += 1
 
         # Track uploads directory
-        if uploaded_files and hasattr(personal_docs_manager, "add_directory"):
-            personal_docs_manager.add_directory(upload_dir, index=False)
+        manager = _get_manager(request)
+        if uploaded_files and manager and hasattr(manager, "add_directory"):
+            manager.add_directory(upload_dir, index=False)
 
         return {
             "success": True,
@@ -346,7 +362,7 @@ def setup_personal_routes(personal_docs_manager, rag_manager, rag_available):
         }
 
     @router.delete("/file")
-    async def delete_file_from_rag(filepath: str = Query(...), owner: str = Depends(require_user), _admin: None = Depends(require_admin)):
+    async def delete_file_from_rag(request: Request, filepath: str = Query(...), owner: str = Depends(require_user), _admin: None = Depends(require_admin)):
         """Delete a specific file from RAG index and optionally from disk."""
         try:
             # Remove chunks from RAG vector store (best-effort)
@@ -380,7 +396,9 @@ def setup_personal_routes(personal_docs_manager, rag_manager, rag_available):
                     pass  # already gone — race with another request or cleanup
 
             # Exclude the file from the listing (persists across restarts)
-            personal_docs_manager.exclude_file(filepath)
+            manager = _get_manager(request)
+            if manager:
+                manager.exclude_file(filepath)
 
             return {
                 "success": True,

@@ -320,6 +320,7 @@ def setup_session_routes(session_manager: SessionManager, config: dict, webhook_
     def create_session(
         request: Request,
         name: str = Form(""),
+        folder: str = Form(None),
         endpoint_url: str = Form(""),
         model: str = Form(""),
         rag: str = Form(None),
@@ -353,8 +354,16 @@ def setup_session_routes(session_manager: SessionManager, config: dict, webhook_
             finally:
                 _db.close()
 
+        user = effective_user(request)
         if not endpoint_url and not skip_val:
-            raise HTTPException(400, "endpoint_url is required (choose from /api/models)")
+            if folder == "Fitness Coach":
+                from src.endpoint_resolver import resolve_endpoint
+                endpoint_url, model, _ = resolve_endpoint("default", owner=user)
+                if not endpoint_url: endpoint_url = ""
+                if not model: model = ""
+                skip_val = True  # skip pinging /v1/models since it's the known default
+            else:
+                raise HTTPException(400, "endpoint_url is required (choose from /api/models)")
 
         model_to_use = model
         request_api_key = api_key.strip() if api_key else ""
@@ -413,7 +422,6 @@ def setup_session_routes(session_manager: SessionManager, config: dict, webhook_
                 model_to_use = found
         
         sid = str(uuid.uuid4())
-        user = effective_user(request)
         session = session_manager.create_session(
             session_id=sid,
             name=name or "",
@@ -422,6 +430,15 @@ def setup_session_routes(session_manager: SessionManager, config: dict, webhook_
             rag=str(rag).lower() == "true" if rag else False,
             owner=user,
         )
+        if folder:
+            db = SessionLocal()
+            try:
+                db_session = db.query(DbSession).filter(DbSession.id == sid).first()
+                if db_session:
+                    db_session.folder = folder
+                    db.commit()
+            finally:
+                db.close()
         # Set auth headers for custom API-key endpoints
         resolved_key = request_api_key
         resolved_base = endpoint_url

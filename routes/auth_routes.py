@@ -454,13 +454,13 @@ def setup_auth_routes(auth_manager: AuthManager) -> APIRouter:
         # search. Keep both in sync with the auth rename.
         try:
             from routes.personal_routes import rename_personal_upload_owner
-            personal_docs_manager = getattr(request.app.state, "personal_docs_manager", None)
-            if personal_docs_manager is not None:
-                rag_manager = getattr(personal_docs_manager, "rag_manager", None)
+            personal_docs_registry = getattr(request.app.state, "personal_docs_registry", None)
+            if personal_docs_registry is not None:
+                rag_manager = getattr(personal_docs_registry, "rag_manager", None)
                 rename_personal_upload_owner(
                     old_username,
                     new_username,
-                    personal_docs_manager=personal_docs_manager,
+                    personal_docs_registry=personal_docs_registry,
                     rag_manager=rag_manager,
                 )
         except Exception as e:

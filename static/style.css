@@ -1,6 +1,4 @@
-/* ============================================ */
 /* Odysseus UI — Consolidated Stylesheet        */
-/* ============================================ */
 
 
 /* ── Variables ──
@@ -8045,9 +8043,7 @@ button.hamburger {
   cursor: pointer;
 }
 
-/* ============================================ */
 /* HEADER SIZING FOR CHAT MESSAGES */
-/* ============================================ */
 /* Markdown in chat messages — colorful, scannable */
 .msg h1, .msg h2, .msg h3, .msg h4, .msg h5, .msg h6 {
   margin: 0.6em 0 0.3em 0;
@@ -9615,9 +9611,7 @@ body.fullwidth-chat .chat-history {
 }
 
 
-/* ============================================ */
 /* RESEARCH DETAILS EXPANDABLE SECTION - UPDATED */
-/* ============================================ */
 
 /* Style the details element */
 details {
@@ -9785,9 +9779,7 @@ details a:hover {
   opacity: 1;
 }
 
-/* ============================================ */
 /* CUSTOM SYNTAX HIGHLIGHTING - Theme-Reactive  */
-/* ============================================ */
 .hljs {
   background: var(--code-bg, var(--hl-bg, var(--panel)));
   color: var(--code-fg, var(--hl-fg, var(--fg)));
@@ -39476,6 +39468,78 @@ body.theme-frosted .modal {
   0%   { box-shadow: 0 0 0 2px var(--accent, var(--red)); }
   100% { box-shadow: 0 0 0 2px transparent; }
 }
+
+/* Fitness Coach Dashboard */
+.fitness-dashboard {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  right: 40px; /* Move away from scrollbar */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 12px;
+  background: color-mix(in srgb, var(--panel) 60%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  animation: fitness-dash-in 0.4s cubic-bezier(0.22, 1.61, 0.36, 1);
+  z-index: 100;
+  width: 90px;
+}
+.fitness-circle-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 90px;
+}
+.fitness-circle-title {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--fg);
+  opacity: 0.7;
+  margin-bottom: 4px;
+  text-align: center;
+  white-space: nowrap;
+}
+.circular-chart {
+  display: block;
+  margin: 0 auto;
+  width: 60px;
+  height: 60px;
+}
+.circle-bg {
+  fill: none;
+  stroke: color-mix(in srgb, var(--fg) 10%, transparent);
+  stroke-width: 3.8;
+}
+.circle {
+  fill: none;
+  stroke-width: 2.8;
+  stroke-linecap: round;
+  transition: stroke-dasharray 1s ease-out, stroke 0.5s;
+}
+.percentage {
+  fill: var(--fg);
+  font-family: inherit;
+  font-size: 8px;
+  text-anchor: middle;
+  font-weight: 700;
+}
+.fitness-circle-sub {
+  font-size: 10px;
+  opacity: 0.5;
+  margin-top: 6px;
+  text-align: center;
+  line-height: 1.1;
+}
+@keyframes fitness-dash-in {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
 /* ── ask_user: multiple-choice question card ─────────────────────────────
    The agent posed a question and ended its turn. The user clicks an option,
    types a free-text "Other" answer, or dismisses (×) to just type in the

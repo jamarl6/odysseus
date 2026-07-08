@@ -20,7 +20,7 @@ from pathlib import Path
 from typing import List, Tuple
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from src.constants import PERSONAL_DIR
+from src.constants import SHARED_DIR
 
 # Configure logging for the script
 logging.basicConfig(
@@ -48,7 +48,7 @@ def main():
     rag_manager = RAGManager()
     
     # Directory to scan
-    docs_directory = PERSONAL_DIR
+    docs_directory = SHARED_DIR
     directory_path = Path(docs_directory)
     
     # Check if directory exists
