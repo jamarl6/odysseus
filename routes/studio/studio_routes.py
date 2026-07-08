@@ -191,7 +191,12 @@ async def generate_photo(request: Request, req: PhotoGenRequest):
             for m_id in req.base_media_id.split(","):
                 m_id = m_id.strip()
                 if m_id:
-                    refs.append({"url": _get_base64_data_url(m_id)})
+                    refs.append({
+                        "type": "image_url",
+                        "image_url": {
+                            "url": _get_base64_data_url(m_id)
+                        }
+                    })
             if refs:
                 payload["input_references"] = refs
 
@@ -281,7 +286,12 @@ async def generate_video(request: Request, req: VideoGenRequest):
             for m_id in req.base_media_id.split(","):
                 m_id = m_id.strip()
                 if m_id:
-                    refs.append({"url": _get_base64_data_url(m_id)})
+                    refs.append({
+                        "type": "image_url",
+                        "image_url": {
+                            "url": _get_base64_data_url(m_id)
+                        }
+                    })
             if refs:
                 payload["input_references"] = refs
 
